@@ -29,6 +29,7 @@ export default function AuctionPage() {
     selectAuction,
     submitBid,
     closeAuction,
+    computeCommitmentHash,
     loading,
     txHash,
     error,
@@ -42,21 +43,19 @@ export default function AuctionPage() {
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [previewHash, setPreviewHash] = useState<string | null>(null);
 
-  // Live compute preview hash
+  // Live compute preview hash using Compact persistentHash
   useEffect(() => {
     if (amount && nonce) {
-      const data = `${amount}:${nonce}`;
-      const encoded = new TextEncoder().encode(data);
-      crypto.subtle.digest('SHA-256', encoded).then(buf => {
-        const hash = Array.from(new Uint8Array(buf))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
+      try {
+        const hash = computeCommitmentHash(Number(amount), nonce);
         setPreviewHash(hash);
-      });
+      } catch {
+        setPreviewHash(null);
+      }
     } else {
       setPreviewHash(null);
     }
-  }, [amount, nonce]);
+  }, [amount, nonce, computeCommitmentHash]);
 
   const handleGenerateNonce = () => {
     const arr = new Uint8Array(16);
