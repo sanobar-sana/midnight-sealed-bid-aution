@@ -133,15 +133,14 @@ npm run deploy
 
 ### Deployed Contract Details
 - **Network**: `testnet-preview`
-- **Contract Address**: `38f3fc0af57790ee51e7785526f7df3319908c386ff847f5c4688b5075b3ef16`
-- **Deployer Key**: `0000000000000000000000000000000000000000000000000000000000000001`
+- **Contract Address**: `542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`
 - **Status**: `deployed`
 
 ---
 
 ## Screenshots
 
-### 1. Successful Compile Output
+### 1. Successful Compile Output (7 Circuits Generated)
 ![Successful Compile Output](docs/images/compile-output.png)
 
 ### 2. Contract Deployed with Address
