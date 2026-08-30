@@ -1,16 +1,30 @@
 {
-  "name": "contract",
+  "name": "midnight-sealed-bid-auction",
+  "private": true,
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "compact compile --skip-zk src/auction.compact src/managed/auction",
-    "test": "node --test test/**/*.test.js",
-    "deploy": "node scripts/deploy.js"
-  },
-  "keywords": [],
   "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "contract:build": "npm --prefix contract run build",
+    "contract:test": "npm --prefix contract run test",
+    "contract:deploy": "npm --prefix contract run deploy",
+    "test": "npm --prefix contract run test"
+  },
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "^0.19.0"
+    "framer-motion": "^13.1.1",
+    "lucide-react": "^1.37.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
   }
 }

@@ -1,0 +1,63 @@
+/* Mobile responsive fixes for Navbar hamburger */
+
+/* Hide hamburger on desktop, show on mobile */
+@media (min-width: 769px) {
+  button[aria-label="Menu"] {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  button[aria-label="Menu"] {
+    display: flex !important;
+  }
+  /* Hide desktop nav links on mobile via JS state */
+}
+
+/* Smooth spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Input focus styles */
+input:focus {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+  outline: none !important;
+}
+
+/* Button hover transitions */
+button:not(:disabled):hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.15s ease;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Responsive grid fixes */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 1rem !important;
+  }
+}
+
+/* Link hover effect */
+a[style*="linkActive"],
+a:hover {
+  opacity: 0.85;
+}
+
+/* Number input no arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}

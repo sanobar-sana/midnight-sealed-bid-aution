@@ -1,0 +1,13 @@
+{
+  "network": "testnet-preview",
+  "contractAddress": "64cbb170863d74f8039973eb46ae0f417478ac5d743db3d0033ede110a95b2e1",
+  "deployerPublicKey": "0000000000000000000000000000000000000000000000000000000000000001",
+  "deployedAt": "2026-08-30T16:14:02.609Z",
+  "status": "deployed",
+  "initialState": {
+    "auctionActive": true,
+    "revealActive": true,
+    "isFinalized": false,
+    "bidCount": "0"
+  }
+}

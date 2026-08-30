@@ -1,8 +1,34 @@
-# Midnight Sealed-Bid Auction (Compact Smart Contract)
+# Midnight Sealed-Bid Auction
 
 ## Initial Product Idea
 
 The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auction platform built on the Midnight blockchain to guarantee fair, manipulation-free, and front-running-resistant bidding. Leveraging Midnight's zero-knowledge Compact smart contract language, participants submit cryptographic commitments of their secret bids during the active bidding window—ensuring that bid amounts remain entirely confidential from competitors, auctioneers, and the public. After bidding concludes, bidders open their commitments during the reveal phase with their original bid values and nonces, allowing the contract to verify integrity and deterministically declare the highest valid bidder as the winner without sacrificing privacy during the bidding period.
+
+---
+
+## Project Structure
+
+```
+midnight-sealed-bid-auction/
+├── src/                    # Frontend React application (App, Pages, Context, Components)
+│   ├── components/         # Navbar (with mobile hamburger), Footer, TxToast
+│   ├── context/            # WalletContext (Lace Wallet connection) & AuctionContext
+│   ├── pages/              # Home, Auction (Bidding), Reveal, Results, HowItWorks
+│   ├── App.tsx             # Main routing and provider setup
+│   └── main.tsx            # React application entry point
+├── contract/               # Midnight Compact smart contract
+│   ├── src/                # auction.compact & managed bindings/circuits
+│   ├── test/               # 12-case comprehensive contract test suite
+│   ├── scripts/            # Deployment runner
+│   └── package.json        # Contract build/test scripts
+├── public/                 # Static assets & verification screenshots
+│   ├── compile.png         # Compiler & circuit verification output
+│   └── run_deploy.png      # Testnet deployment verification output
+├── index.html              # Frontend HTML root
+├── vite.config.ts          # Vite bundler configuration
+├── package.json            # Root scripts (dev, build, test, contract:*)
+└── README.md
+```
 
 ---
 
@@ -15,6 +41,7 @@ The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auctio
   - **Reveal Phase**: Verifies `(bid, nonce)` against stored commitments; enforces single reveal per bidder; tracks highest valid bid.
   - **Finalization Phase**: Closes reveals, finalizes the winner, and exposes a read-only `getAuctionResult` circuit for client queries.
 - **Robust Edge Case Handling**: Safely handles zero-bid auctions, invalid reveals, unauthorized reveals, and prevents duplicate state transitions.
+- **Complete Responsive Web UI**: React + Vite + TypeScript frontend with Lace wallet connection simulation, transaction toasts, and mobile hamburger navigation.
 
 ---
 
@@ -75,40 +102,45 @@ Private witness data is processed purely off-chain on the user's local machine w
 - **Node.js**: `v20.0.0` or later (tested on Node.js `v26.5.1`)
 - **Compact Toolchain**: Version `0.34.0` / compiler `0.5.2`
 
-### 1. Install Dependencies
+### 1. Clone the Repository & Install Dependencies
 ```bash
-cd contract
+git clone https://github.com/sanobar-sana/midnight-sealed-bid-aution.git
+cd midnight-sealed-bid-aution
+
+# Install frontend dependencies
 npm install
+
+# Install contract dependencies
+npm --prefix contract install
 ```
 
-### 2. Compile the Compact Contract
-Compile the Compact contract to generate TypeScript bindings, circuit definitions, and runtime interfaces:
+### 2. Start the Frontend Development Server
 ```bash
-npm run build
+npm run dev
 ```
-*Or directly via the Compact CLI:*
-```bash
-compact compile --skip-zk src/auction.compact src/managed/auction
-```
+Open [http://localhost:5173](http://localhost:5173) in your browser to view the application.
 
-### 3. Run the Automated Test Suite
+### 3. Run the Automated Contract Test Suite
 Run the 12-case comprehensive unit and integration test suite:
 ```bash
 npm test
 ```
 
-### 4. Deploy the Contract
-Deploy the contract to Midnight Testnet (Preview/Preprod):
+### 4. Compile the Compact Contract
 ```bash
-npm run deploy
+npm run contract:build
 ```
-*Deployment metadata is saved to `contract/deployed-contract.json`.*
+
+### 5. Deploy the Contract to Midnight Testnet
+```bash
+npm run contract:deploy
+```
 
 ---
 
 ## Deployment & Test Results
 
-### Test Suite Output
+### Test Suite Output (12/12 Passing)
 ```
 ▶ Sealed-Bid Auction Compact Contract Test Suite
   ✔ 1. Auction initializes correctly
@@ -140,7 +172,7 @@ npm run deploy
 
 ## Screenshots
 
-### 1. Successful Compile Output
+### 1. Successful Compile Output (7 Circuits Generated)
 ![Successful Compile Output](public/compile.png)
 
 ### 2. Contract Deployed with Address
