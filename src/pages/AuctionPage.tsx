@@ -7,7 +7,18 @@ import TxToast from '../components/TxToast';
 
 export default function AuctionPage() {
   const { connected, connect, connecting } = useWallet();
-  const { phase, bidCount, bids, submitBid, closeAuction, userHasBid, loading, txHash, error, clearError } = useAuction();
+  const {
+    auctions,
+    selectedAuctionId,
+    selectedAuction,
+    selectAuction,
+    submitBid,
+    closeAuction,
+    loading,
+    txHash,
+    error,
+    clearError,
+  } = useAuction();
 
   const [amount, setAmount] = useState('');
   const [nonce, setNonce] = useState('');
@@ -33,23 +44,49 @@ export default function AuctionPage() {
 
       <div style={styles.container}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          {/* Header */}
+          {/* Auction Selector Bar */}
+          <div style={styles.selectorBar}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={styles.selectorLabel}>Select Auction:</span>
+              {auctions.map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => selectAuction(a.id)}
+                  style={a.id === selectedAuctionId ? styles.tabActive : styles.tab}
+                >
+                  <span>{a.imageEmoji}</span>
+                  <span>{a.title}</span>
+                  <span style={a.phase === 'bidding' ? styles.tagGreen : a.phase === 'reveal' ? styles.tagBlue : styles.tagPurple}>
+                    {a.phase}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Auction Header */}
           <div style={styles.header}>
-            <h1 style={styles.title}>Auction — Bidding Phase</h1>
-            <p style={styles.subtitle}>Submit your sealed bid commitment. Your actual bid amount stays private.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: 32 }}>{selectedAuction.imageEmoji}</span>
+              <div>
+                <h1 style={styles.title}>{selectedAuction.title}</h1>
+                <div style={{ color: '#06b6d4', fontSize: 13, fontWeight: 600 }}>{selectedAuction.category}</div>
+              </div>
+            </div>
+            <p style={styles.subtitle}>{selectedAuction.description}</p>
           </div>
 
           {/* Phase Banner */}
-          <div style={phase === 'bidding' ? styles.phaseBannerGreen : styles.phaseBannerBlue}>
+          <div style={selectedAuction.phase === 'bidding' ? styles.phaseBannerGreen : styles.phaseBannerBlue}>
             <div style={styles.phaseLeft}>
-              {phase === 'bidding' ? '🟢' : phase === 'reveal' ? '🔵' : '✅'}
+              {selectedAuction.phase === 'bidding' ? '🟢' : selectedAuction.phase === 'reveal' ? '🔵' : '✅'}
               <span style={styles.phaseText}>
-                {phase === 'bidding' ? 'Bidding is Open' : phase === 'reveal' ? 'Reveal Phase Active' : 'Auction Finalized'}
+                {selectedAuction.phase === 'bidding' ? 'Bidding is Open' : selectedAuction.phase === 'reveal' ? 'Reveal Phase Active' : 'Auction Finalized'}
               </span>
             </div>
             <div style={styles.phaseStat}>
               <Users size={14} />
-              <span>{bidCount} bids submitted</span>
+              <span>{selectedAuction.bidCount} bids submitted</span>
             </div>
           </div>
 
@@ -64,21 +101,21 @@ export default function AuctionPage() {
               {!connected ? (
                 <div style={styles.connectPrompt}>
                   <AlertCircle size={40} color="#f59e0b" />
-                  <p style={styles.connectText}>Connect your Lace wallet to participate</p>
+                  <p style={styles.connectText}>Connect your Lace wallet to place a private bid</p>
                   <button style={styles.connectBtn} onClick={connect} disabled={connecting}>
                     {connecting ? 'Connecting...' : 'Connect Lace Wallet'}
                   </button>
                 </div>
-              ) : userHasBid ? (
+              ) : selectedAuction.userHasBid ? (
                 <div style={styles.alreadyBid}>
                   <CheckCircle size={40} color="#10b981" />
                   <p style={{ color: '#10b981', fontWeight: 600, fontSize: 16 }}>Bid Submitted!</p>
-                  <p style={{ color: '#9490c4', fontSize: 13 }}>Your sealed commitment is recorded on-chain. Wait for the reveal phase to open your bid.</p>
+                  <p style={{ color: '#9490c4', fontSize: 13 }}>Your sealed commitment is recorded on-chain for this auction. Wait for the reveal phase to open your bid.</p>
                 </div>
-              ) : phase !== 'bidding' ? (
+              ) : selectedAuction.phase !== 'bidding' ? (
                 <div style={styles.closedPrompt}>
                   <AlertCircle size={40} color="#9490c4" />
-                  <p style={{ color: '#9490c4', fontSize: 14 }}>Bidding phase has ended. Visit the Reveal page to open your commitment.</p>
+                  <p style={{ color: '#9490c4', fontSize: 14 }}>Bidding phase has ended for this auction.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} style={styles.form}>
@@ -89,7 +126,7 @@ export default function AuctionPage() {
                       min="1"
                       value={amount}
                       onChange={e => setAmount(e.target.value)}
-                      placeholder="e.g. 500"
+                      placeholder="e.g. 1500"
                       style={styles.input}
                       required
                     />
@@ -147,10 +184,10 @@ export default function AuctionPage() {
             <div style={styles.card}>
               <div style={styles.cardHead}>
                 <Users size={20} color="#06b6d4" />
-                <h2 style={styles.cardTitle}>Submitted Bids</h2>
+                <h2 style={styles.cardTitle}>Submitted Bids ({selectedAuction.bids.length})</h2>
               </div>
               <div style={styles.bidList}>
-                {bids.map((b, i) => (
+                {selectedAuction.bids.map((b, i) => (
                   <div key={i} style={styles.bidRow}>
                     <div>
                       <div style={styles.bidder}>{b.bidder}</div>
@@ -161,22 +198,17 @@ export default function AuctionPage() {
                     </div>
                   </div>
                 ))}
-                {bids.length === 0 && (
-                  <div style={{ textAlign: 'center', color: '#5a587a', padding: 32, fontSize: 14 }}>
-                    No bids yet. Be the first to bid!
-                  </div>
-                )}
               </div>
 
               {connected && (
                 <div style={styles.adminSection}>
-                  <div style={styles.adminTitle}>Auction Admin</div>
+                  <div style={styles.adminTitle}>Auction Phase Control</div>
                   <button
-                    style={phase === 'bidding' ? styles.closeBtn : styles.closeBtnDisabled}
+                    style={selectedAuction.phase === 'bidding' ? styles.closeBtn : styles.closeBtnDisabled}
                     onClick={closeAuction}
-                    disabled={phase !== 'bidding' || loading}
+                    disabled={selectedAuction.phase !== 'bidding' || loading}
                   >
-                    Close Bidding & Open Reveals
+                    Close Bidding & Open Reveal Phase
                   </button>
                 </div>
               )}
@@ -190,10 +222,28 @@ export default function AuctionPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: { paddingTop: 80, minHeight: '100vh' },
-  container: { maxWidth: 1200, margin: '0 auto', padding: '2rem 1.5rem' },
-  header: { marginBottom: 32 },
-  title: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: '#f1f0ff' },
-  subtitle: { fontSize: 15, color: '#9490c4', marginTop: 8 },
+  container: { maxWidth: 1200, margin: '0 auto', padding: '1.5rem' },
+  selectorBar: {
+    background: '#0a0a1e', border: '1px solid #1a1a4e', borderRadius: 14,
+    padding: '12px 16px', marginBottom: 28,
+  },
+  selectorLabel: { fontSize: 13, fontWeight: 600, color: '#9490c4' },
+  tab: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'transparent', border: '1px solid #1a1a4e', color: '#9490c4',
+    borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+  },
+  tabActive: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)',
+    color: '#f1f0ff', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  },
+  tagGreen: { fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagBlue: { fontSize: 10, fontWeight: 700, color: '#06b6d4', background: 'rgba(6,182,212,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagPurple: { fontSize: 10, fontWeight: 700, color: '#8b5cf6', background: 'rgba(124,58,237,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  header: { marginBottom: 24 },
+  title: { fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: 800, color: '#f1f0ff' },
+  subtitle: { fontSize: 14, color: '#9490c4', marginTop: 4 },
   phaseBannerGreen: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
     background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',

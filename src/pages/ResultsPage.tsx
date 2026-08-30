@@ -3,56 +3,80 @@ import { motion } from 'framer-motion';
 import { Trophy, Award, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext';
 
-const CONTRACT_ADDRESS = '542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a';
-
 export default function ResultsPage() {
-  const { phase, hasWinner, winner, winningBid, bids, bidCount } = useAuction();
+  const { auctions, selectedAuctionId, selectedAuction, selectAuction } = useAuction();
 
-  const revealedCount = bids.filter(b => b.revealed).length;
+  const revealedCount = selectedAuction.bids.filter(b => b.revealed).length;
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          {/* Auction Selector Bar */}
+          <div style={styles.selectorBar}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={styles.selectorLabel}>Select Auction:</span>
+              {auctions.map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => selectAuction(a.id)}
+                  style={a.id === selectedAuctionId ? styles.tabActive : styles.tab}
+                >
+                  <span>{a.imageEmoji}</span>
+                  <span>{a.title}</span>
+                  <span style={a.phase === 'bidding' ? styles.tagGreen : a.phase === 'reveal' ? styles.tagBlue : styles.tagPurple}>
+                    {a.phase}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div style={styles.header}>
-            <h1 style={styles.title}>Auction Results</h1>
-            <p style={styles.subtitle}>On-chain results queryable via the <code style={styles.code}>getAuctionResult()</code> circuit.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: 32 }}>{selectedAuction.imageEmoji}</span>
+              <div>
+                <h1 style={styles.title}>{selectedAuction.title} Results</h1>
+                <div style={{ color: '#06b6d4', fontSize: 13, fontWeight: 600 }}>{selectedAuction.category}</div>
+              </div>
+            </div>
+            <p style={styles.subtitle}>On-chain results queryable via the <code style={styles.code}>getAuctionResult()</code> Compact circuit.</p>
           </div>
 
           {/* Status */}
-          <div style={phase === 'finalized' ? styles.bannerFinalized : styles.bannerPending}>
-            {phase === 'finalized' ? '✅ Auction Finalized' : phase === 'reveal' ? '🔵 Reveal in Progress' : '🟢 Bidding Open'}
+          <div style={selectedAuction.phase === 'finalized' ? styles.bannerFinalized : styles.bannerPending}>
+            {selectedAuction.phase === 'finalized' ? '✅ Auction Finalized' : selectedAuction.phase === 'reveal' ? '🔵 Reveal in Progress' : '🟢 Bidding Open'}
             <span style={{ fontSize: 13, color: '#9490c4' }}>
-              {phase !== 'finalized' && ' — Results available after finalization'}
+              {selectedAuction.phase !== 'finalized' && ' — Final winner results will be unlocked upon finalization'}
             </span>
           </div>
 
           <div style={styles.grid}>
             {/* Winner Card */}
-            <div style={hasWinner ? styles.winnerCard : styles.card}>
-              {phase !== 'finalized' ? (
+            <div style={selectedAuction.hasWinner ? styles.winnerCard : styles.card}>
+              {selectedAuction.phase !== 'finalized' ? (
                 <div style={styles.centeredPrompt}>
                   <AlertCircle size={44} color="#f59e0b" />
                   <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: 16 }}>Results Pending</p>
                   <p style={{ color: '#9490c4', fontSize: 13, textAlign: 'center', maxWidth: 280 }}>
-                    The auction must be finalized before results are available. Complete the reveal phase and run determineWinner().
+                    This auction is currently in the <strong>{selectedAuction.phase}</strong> phase. Complete reveal and run determineWinner() to finalize.
                   </p>
                 </div>
-              ) : hasWinner ? (
+              ) : selectedAuction.hasWinner ? (
                 <div style={styles.winnerContent}>
                   <div style={styles.trophyWrap}>
                     <Trophy size={48} color="#f59e0b" />
                   </div>
                   <div style={styles.winnerBadge}>🏆 Winner Determined</div>
-                  <div style={styles.winnerAddress}>{winner}</div>
-                  <div style={styles.winnerAmount}>{winningBid?.toLocaleString()} DUST</div>
+                  <div style={styles.winnerAddress}>{selectedAuction.winner}</div>
+                  <div style={styles.winnerAmount}>{selectedAuction.winningBid?.toLocaleString()} DUST</div>
                   <div style={{ color: '#9490c4', fontSize: 13 }}>Highest Valid Revealed Bid</div>
                 </div>
               ) : (
                 <div style={styles.centeredPrompt}>
                   <Award size={44} color="#5a587a" />
                   <p style={{ color: '#9490c4', fontWeight: 600 }}>No Valid Bids</p>
-                  <p style={{ color: '#5a587a', fontSize: 13, textAlign: 'center' }}>No valid bids were revealed during the reveal phase.</p>
+                  <p style={{ color: '#5a587a', fontSize: 13, textAlign: 'center' }}>No valid bids were revealed for this auction.</p>
                 </div>
               )}
             </div>
@@ -63,11 +87,11 @@ export default function ResultsPage() {
                 <div style={styles.cardTitle}>Auction Statistics</div>
                 <div style={styles.statsList}>
                   {[
-                    { label: 'Total Bids', value: String(bidCount) },
+                    { label: 'Total Bids', value: String(selectedAuction.bidCount) },
                     { label: 'Revealed Bids', value: String(revealedCount) },
-                    { label: 'Phase', value: phase.charAt(0).toUpperCase() + phase.slice(1) },
+                    { label: 'Phase', value: selectedAuction.phase.charAt(0).toUpperCase() + selectedAuction.phase.slice(1) },
                     { label: 'Network', value: 'Midnight Testnet Preview' },
-                    { label: 'Has Winner', value: hasWinner ? 'Yes' : phase === 'finalized' ? 'No' : 'TBD' },
+                    { label: 'Has Winner', value: selectedAuction.hasWinner ? 'Yes' : selectedAuction.phase === 'finalized' ? 'No' : 'TBD' },
                   ].map(s => (
                     <div key={s.label} style={styles.statRow}>
                       <span style={styles.statLabel}>{s.label}</span>
@@ -83,7 +107,7 @@ export default function ResultsPage() {
                   <div style={styles.statRow}>
                     <span style={styles.statLabel}>Address</span>
                     <code style={{ fontSize: 11, color: '#06b6d4', fontFamily: 'JetBrains Mono, monospace', wordBreak: 'break-all' }}>
-                      {CONTRACT_ADDRESS.slice(0, 20)}…
+                      {selectedAuction.contractAddress.slice(0, 24)}…
                     </code>
                   </div>
                   <div style={styles.statRow}>
@@ -96,7 +120,7 @@ export default function ResultsPage() {
                   </div>
                 </div>
                 <a
-                  href={`https://explorer.midnight.network/contract/${CONTRACT_ADDRESS}`}
+                  href={`https://explorer.midnight.network/contract/${selectedAuction.contractAddress}`}
                   target="_blank"
                   rel="noreferrer"
                   style={styles.explorerLink}
@@ -108,7 +132,7 @@ export default function ResultsPage() {
           </div>
 
           {/* Revealed Bids Table */}
-          {bids.some(b => b.revealed) && (
+          {selectedAuction.bids.some(b => b.revealed) && (
             <div style={{ ...styles.card, marginTop: 24 }}>
               <div style={styles.cardTitle}>Revealed Bids</div>
               <div style={{ overflowX: 'auto' }}>
@@ -121,14 +145,14 @@ export default function ResultsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {bids.filter(b => b.revealed).map((b, i) => (
-                      <tr key={i} style={b.bidder === winner ? styles.trWinner : styles.tr}>
+                    {selectedAuction.bids.filter(b => b.revealed).map((b, i) => (
+                      <tr key={i} style={b.bidder === selectedAuction.winner ? styles.trWinner : styles.tr}>
                         <td style={styles.td}>
                           <code style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: '#9490c4' }}>{b.bidder}</code>
                         </td>
                         <td style={{ ...styles.td, fontWeight: 700, color: '#f1f0ff' }}>{b.revealedAmount?.toLocaleString()}</td>
                         <td style={styles.td}>
-                          {b.bidder === winner
+                          {b.bidder === selectedAuction.winner
                             ? <span style={styles.badgeGold}>🏆 Winner</span>
                             : <span style={styles.badgeGray}>Valid</span>}
                         </td>
@@ -147,10 +171,28 @@ export default function ResultsPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: { paddingTop: 80, minHeight: '100vh' },
-  container: { maxWidth: 1200, margin: '0 auto', padding: '2rem 1.5rem' },
-  header: { marginBottom: 24 },
-  title: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: '#f1f0ff' },
-  subtitle: { fontSize: 15, color: '#9490c4', marginTop: 8 },
+  container: { maxWidth: 1200, margin: '0 auto', padding: '1.5rem' },
+  selectorBar: {
+    background: '#0a0a1e', border: '1px solid #1a1a4e', borderRadius: 14,
+    padding: '12px 16px', marginBottom: 28,
+  },
+  selectorLabel: { fontSize: 13, fontWeight: 600, color: '#9490c4' },
+  tab: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'transparent', border: '1px solid #1a1a4e', color: '#9490c4',
+    borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+  },
+  tabActive: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)',
+    color: '#f1f0ff', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  },
+  tagGreen: { fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagBlue: { fontSize: 10, fontWeight: 700, color: '#06b6d4', background: 'rgba(6,182,212,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagPurple: { fontSize: 10, fontWeight: 700, color: '#8b5cf6', background: 'rgba(124,58,237,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  header: { marginBottom: 20 },
+  title: { fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: 800, color: '#f1f0ff' },
+  subtitle: { fontSize: 14, color: '#9490c4', marginTop: 4 },
   code: { fontFamily: 'JetBrains Mono, monospace', color: '#8b5cf6', fontSize: 13 },
   bannerFinalized: {
     background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',

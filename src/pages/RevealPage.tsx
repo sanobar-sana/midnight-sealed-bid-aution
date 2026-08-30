@@ -7,18 +7,29 @@ import TxToast from '../components/TxToast';
 
 export default function RevealPage() {
   const { connected, connect, connecting } = useWallet();
-  const { phase, bids, revealBid, closeReveal, determineWinner, finalizeAuction, userHasBid, userHasRevealed, loading, txHash, error, clearError } = useAuction();
+  const {
+    auctions,
+    selectedAuctionId,
+    selectedAuction,
+    selectAuction,
+    revealBid,
+    closeReveal,
+    determineWinner,
+    finalizeAuction,
+    loading,
+    txHash,
+    error,
+    clearError,
+  } = useAuction();
 
-  const [amount, setAmount] = useState('');
-  const [nonce, setNonce] = useState('');
+  const [amount, setAmount] = useState(selectedAuction.userBidAmount ? String(selectedAuction.userBidAmount) : '');
+  const [nonce, setNonce] = useState(selectedAuction.userNonce || '');
   const [showNonce, setShowNonce] = useState(false);
 
   const handleReveal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !nonce) return;
     await revealBid(Number(amount), nonce);
-    setAmount('');
-    setNonce('');
   };
 
   return (
@@ -27,8 +38,38 @@ export default function RevealPage() {
 
       <div style={styles.container}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          {/* Auction Selector Bar */}
+          <div style={styles.selectorBar}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={styles.selectorLabel}>Select Auction:</span>
+              {auctions.map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => {
+                    selectAuction(a.id);
+                    setAmount(a.userBidAmount ? String(a.userBidAmount) : '');
+                    setNonce(a.userNonce || '');
+                  }}
+                  style={a.id === selectedAuctionId ? styles.tabActive : styles.tab}
+                >
+                  <span>{a.imageEmoji}</span>
+                  <span>{a.title}</span>
+                  <span style={a.phase === 'bidding' ? styles.tagGreen : a.phase === 'reveal' ? styles.tagBlue : styles.tagPurple}>
+                    {a.phase}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div style={styles.header}>
-            <h1 style={styles.title}>Reveal Phase</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: 32 }}>{selectedAuction.imageEmoji}</span>
+              <div>
+                <h1 style={styles.title}>Reveal Phase — {selectedAuction.title}</h1>
+                <div style={{ color: '#06b6d4', fontSize: 13, fontWeight: 600 }}>{selectedAuction.category}</div>
+              </div>
+            </div>
             <p style={styles.subtitle}>Open your commitment by revealing your original bid amount and secret nonce.</p>
           </div>
 
@@ -37,7 +78,7 @@ export default function RevealPage() {
             <Info size={16} color="#06b6d4" />
             <p style={styles.infoText}>
               The contract verifies: <code style={styles.code}>persistentHash([bidAmount, nonce]) == storedCommitment</code>
-              <br />Invalid reveals are automatically rejected on-chain.
+              <br />Invalid reveals are automatically rejected on-chain by the Midnight Compact circuit.
             </p>
           </div>
 
@@ -55,22 +96,22 @@ export default function RevealPage() {
                   <p style={{ color: '#9490c4' }}>Connect your wallet to reveal your bid</p>
                   <button style={styles.connectBtn} onClick={connect} disabled={connecting}>Connect Lace Wallet</button>
                 </div>
-              ) : !userHasBid ? (
+              ) : !selectedAuction.userHasBid ? (
                 <div style={styles.centeredPrompt}>
                   <AlertCircle size={40} color="#5a587a" />
-                  <p style={{ color: '#9490c4', fontSize: 14 }}>You have no sealed commitment on-chain. Visit the Auction page to place a bid first.</p>
+                  <p style={{ color: '#9490c4', fontSize: 14 }}>You have no sealed commitment for this auction.</p>
                 </div>
-              ) : userHasRevealed ? (
+              ) : selectedAuction.userHasRevealed ? (
                 <div style={styles.centeredPrompt}>
                   <CheckCircle size={40} color="#10b981" />
                   <p style={{ color: '#10b981', fontWeight: 600 }}>Bid Successfully Revealed!</p>
-                  <p style={{ color: '#9490c4', fontSize: 13, textAlign: 'center' }}>Your bid is now part of the winner determination. Wait for the auction to close.</p>
+                  <p style={{ color: '#9490c4', fontSize: 13, textAlign: 'center' }}>Your bid is now part of the winner determination.</p>
                 </div>
-              ) : phase !== 'reveal' ? (
+              ) : selectedAuction.phase !== 'reveal' ? (
                 <div style={styles.centeredPrompt}>
                   <AlertCircle size={40} color="#5a587a" />
                   <p style={{ color: '#9490c4', fontSize: 14 }}>
-                    {phase === 'bidding' ? 'Reveal phase has not started yet. Wait for bidding to close.' : 'Auction is finalized.'}
+                    {selectedAuction.phase === 'bidding' ? 'Reveal phase has not started yet for this auction.' : 'Auction is finalized.'}
                   </p>
                 </div>
               ) : (
@@ -115,14 +156,10 @@ export default function RevealPage() {
                       <span style={{ color: '#9490c4', fontSize: 13 }}>Step 2</span>
                       <span style={{ color: '#f1f0ff', fontSize: 13 }}>Compared against your stored commitment</span>
                     </div>
-                    <div style={styles.verifyRow}>
-                      <span style={{ color: '#9490c4', fontSize: 13 }}>Step 3</span>
-                      <span style={{ color: '#f1f0ff', fontSize: 13 }}>If match, bid is accepted and tracked</span>
-                    </div>
                   </div>
 
                   <button type="submit" style={styles.revealBtn} disabled={loading || !amount || !nonce}>
-                    {loading ? 'Verifying...' : '👁 Reveal My Bid'}
+                    {loading ? 'Verifying on-chain...' : '👁 Reveal My Bid'}
                   </button>
                 </form>
               )}
@@ -132,16 +169,16 @@ export default function RevealPage() {
             <div style={styles.card}>
               <div style={styles.cardHead}>
                 <CheckCircle size={20} color="#10b981" />
-                <h2 style={styles.cardTitle}>Reveal Status</h2>
+                <h2 style={styles.cardTitle}>Revealed Bids Status</h2>
               </div>
               <div style={styles.bidList}>
-                {bids.map((b, i) => (
+                {selectedAuction.bids.map((b, i) => (
                   <div key={i} style={styles.bidRow}>
                     <div>
                       <div style={styles.bidder}>{b.bidder}</div>
                       {b.revealed && b.revealedAmount !== undefined
-                        ? <div style={{ color: '#10b981', fontSize: 13, marginTop: 2 }}>{b.revealedAmount} DUST</div>
-                        : <div style={{ color: '#5a587a', fontSize: 12, marginTop: 2 }}>Sealed</div>
+                        ? <div style={{ color: '#10b981', fontSize: 13, marginTop: 2 }}>{b.revealedAmount.toLocaleString()} DUST</div>
+                        : <div style={{ color: '#5a587a', fontSize: 12, marginTop: 2 }}>🔒 Sealed</div>
                       }
                     </div>
                     <div style={b.revealed ? styles.badgeGreen : styles.badgeGray}>
@@ -153,12 +190,12 @@ export default function RevealPage() {
 
               {/* Admin controls */}
               <div style={styles.adminSection}>
-                <div style={styles.adminTitle}>Auction Admin Controls</div>
+                <div style={styles.adminTitle}>Admin Lifecycle Transitions</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button onClick={closeReveal} disabled={phase !== 'reveal' || loading} style={phase === 'reveal' ? styles.adminBtn : styles.adminBtnDisabled}>
+                  <button onClick={closeReveal} disabled={selectedAuction.phase !== 'reveal' || loading} style={selectedAuction.phase === 'reveal' ? styles.adminBtn : styles.adminBtnDisabled}>
                     Close Reveal Phase
                   </button>
-                  <button onClick={determineWinner} disabled={phase !== 'reveal' || loading} style={phase === 'reveal' ? styles.adminBtnPurple : styles.adminBtnDisabled}>
+                  <button onClick={determineWinner} disabled={selectedAuction.phase !== 'reveal' || loading} style={selectedAuction.phase === 'reveal' ? styles.adminBtnPurple : styles.adminBtnDisabled}>
                     Determine Winner
                   </button>
                   <button onClick={finalizeAuction} disabled={loading} style={styles.adminBtnGold}>
@@ -176,10 +213,28 @@ export default function RevealPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: { paddingTop: 80, minHeight: '100vh' },
-  container: { maxWidth: 1200, margin: '0 auto', padding: '2rem 1.5rem' },
-  header: { marginBottom: 24 },
-  title: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: '#f1f0ff' },
-  subtitle: { fontSize: 15, color: '#9490c4', marginTop: 8 },
+  container: { maxWidth: 1200, margin: '0 auto', padding: '1.5rem' },
+  selectorBar: {
+    background: '#0a0a1e', border: '1px solid #1a1a4e', borderRadius: 14,
+    padding: '12px 16px', marginBottom: 28,
+  },
+  selectorLabel: { fontSize: 13, fontWeight: 600, color: '#9490c4' },
+  tab: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'transparent', border: '1px solid #1a1a4e', color: '#9490c4',
+    borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+  },
+  tabActive: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)',
+    color: '#f1f0ff', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  },
+  tagGreen: { fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagBlue: { fontSize: 10, fontWeight: 700, color: '#06b6d4', background: 'rgba(6,182,212,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  tagPurple: { fontSize: 10, fontWeight: 700, color: '#8b5cf6', background: 'rgba(124,58,237,0.15)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' },
+  header: { marginBottom: 20 },
+  title: { fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: 800, color: '#f1f0ff' },
+  subtitle: { fontSize: 14, color: '#9490c4', marginTop: 4 },
   infoBanner: {
     display: 'flex', alignItems: 'flex-start', gap: 12,
     background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)',
