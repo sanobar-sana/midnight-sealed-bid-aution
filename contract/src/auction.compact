@@ -1,0 +1,121 @@
+pragma language_version >= 0.20;
+
+import CompactStandardLibrary;
+
+export struct AuctionResult {
+    hasWinner: Boolean,
+    winningBidder: Bytes<32>,
+    winningBid: Uint<64>
+}
+
+export ledger auctionActive: Boolean;
+export ledger revealActive: Boolean;
+export ledger winnerDetermined: Boolean;
+export ledger isFinalized: Boolean;
+export ledger hasWinner: Boolean;
+export ledger hasRevealedBids: Boolean;
+
+export ledger bidCount: Counter;
+export ledger bids: Map<Bytes<32>, Bytes<32>>;
+export ledger revealedBids: Map<Bytes<32>, Uint<64>>;
+
+export ledger highestBid: Uint<64>;
+export ledger highestBidder: Bytes<32>;
+export ledger winningBid: Uint<64>;
+export ledger winningBidder: Bytes<32>;
+
+constructor() {
+    auctionActive = true;
+    revealActive = true;
+    winnerDetermined = false;
+    isFinalized = false;
+    hasWinner = false;
+    hasRevealedBids = false;
+    bidCount.increment(0);
+    highestBid = 0;
+    highestBidder = default<Bytes<32>>;
+    winningBid = 0;
+    winningBidder = default<Bytes<32>>;
+}
+
+export circuit submitBid(commitment: Bytes<32>): [] {
+    assert(auctionActive, "Auction is closed");
+    const bidder = ownPublicKey().bytes;
+    assert(!bids.member(disclose(bidder)), "Bidder already submitted a bid");
+    bids.insert(disclose(bidder), disclose(commitment));
+    bidCount.increment(1);
+}
+
+export circuit closeAuction(): [] {
+    assert(auctionActive, "Auction already closed");
+    auctionActive = false;
+}
+
+export circuit revealBid(bid: Uint<64>, nonce: Bytes<32>): [] {
+    assert(!auctionActive, "Auction is still active");
+    assert(revealActive, "Reveal phase is closed");
+    const bidder = ownPublicKey().bytes;
+    assert(bids.member(disclose(bidder)), "Bidder has not submitted a bid");
+    assert(!revealedBids.member(disclose(bidder)), "Bid already revealed");
+
+    const computedCommitment = persistentHash<[Uint<64>, Bytes<32>]>([bid, nonce]);
+    const storedCommitment = bids.lookup(disclose(bidder));
+    assert(computedCommitment == storedCommitment, "Commitment mismatch");
+
+    revealedBids.insert(disclose(bidder), disclose(bid));
+
+    if (!hasRevealedBids || disclose(bid > highestBid)) {
+        highestBid = disclose(bid);
+        highestBidder = disclose(bidder);
+        hasRevealedBids = true;
+    }
+}
+
+export circuit closeReveal(): [] {
+    assert(!auctionActive, "Auction is still active");
+    assert(revealActive, "Reveal phase already closed");
+    revealActive = false;
+}
+
+export circuit determineWinner(): [] {
+    assert(!auctionActive, "Auction is still active");
+    assert(!revealActive, "Reveal phase is not complete");
+    assert(!winnerDetermined, "Winner already determined");
+
+    winnerDetermined = true;
+    if (hasRevealedBids) {
+        winningBid = highestBid;
+        winningBidder = highestBidder;
+        hasWinner = true;
+    } else {
+        hasWinner = false;
+    }
+}
+
+export circuit finalizeAuction(): [] {
+    assert(!auctionActive, "Auction is still active");
+    assert(!revealActive, "Reveal phase is not complete");
+    assert(!isFinalized, "Auction already finalized");
+
+    if (!winnerDetermined) {
+        winnerDetermined = true;
+        if (hasRevealedBids) {
+            winningBid = highestBid;
+            winningBidder = highestBidder;
+            hasWinner = true;
+        } else {
+            hasWinner = false;
+        }
+    }
+
+    isFinalized = true;
+}
+
+export circuit getAuctionResult(): AuctionResult {
+    assert(isFinalized, "Auction is not finalized");
+    return AuctionResult {
+        hasWinner: hasWinner,
+        winningBidder: winningBidder,
+        winningBid: winningBid
+    };
+}
