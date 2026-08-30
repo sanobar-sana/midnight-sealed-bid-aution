@@ -140,8 +140,8 @@ npm run deploy
 
 ## Screenshots
 
-### 1. Successful Compile Output (7 Circuits Generated)
-![Successful Compile Output](docs/images/compile-output.png)
+### 1. Successful Compile Output
+![Successful Compile Output](public/compile.png)
 
 ### 2. Contract Deployed with Address
-![Contract Deployed](docs/images/deployment-address.png)
+![Contract Deployed](public/run_deploy.png)
