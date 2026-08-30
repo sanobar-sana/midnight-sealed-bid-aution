@@ -1,0 +1,70 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.34.0",
+  "language-version": "0.26.0",
+  "runtime-version": "0.19.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 4962,
+      "hash": "d9e1d6525cf7affd1dcb16c1ce7eb4b4520ffddc653f15c3f0ff524ed86b5a58"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 4623,
+      "hash": "2b436ead5f0e7cd16a6b31b94f910a9a01869058e43061b6955b6eb8ae68c729"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 136256,
+      "hash": "a17bfaa858321a9c455c5693b9bd216bd936218afc5b540fa3766b994e5f8439"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 3796,
+      "hash": "6e50963b86577eec77f6cfdb6c3847c274a47264fb2ac685581074d5b8ba6ff9"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "closeAuction.zkir": {
+      "type": "file",
+      "size": 1713,
+      "hash": "6a68295bc6573e83e3ddd8f21b180abe4e16cd424407e17caa5feac45dc48b57"
+    },
+    "closeReveal.zkir": {
+      "type": "file",
+      "size": 2401,
+      "hash": "ad39fb2111a580bb14483fac7471299d286a725b6d7294eefad54d774df5f0d1"
+    },
+    "determineWinner.zkir": {
+      "type": "file",
+      "size": 10075,
+      "hash": "97314d954cfe6faac40092815c0ac4a103284a57234e1d60d6099c7ceb0de0fa"
+    },
+    "finalizeAuction.zkir": {
+      "type": "file",
+      "size": 12001,
+      "hash": "c84c8dadaf158f5a096d44de082dd10dcebfe0d1af4aaa229ae4ec6c3206e2c5"
+    },
+    "getAuctionResult.zkir": {
+      "type": "file",
+      "size": 3132,
+      "hash": "86a2371050727850b0a49b937ec7b91d427b878b327bba45e256f36d1c811089"
+    },
+    "revealBid.zkir": {
+      "type": "file",
+      "size": 11734,
+      "hash": "931ad2fb51f5658a0005180f7e190e83310ef1c853e68e62ec62f77477877c25"
+    },
+    "submitBid.zkir": {
+      "type": "file",
+      "size": 4328,
+      "hash": "81b759637cb3c4b11e22a39fdfa71bea249be4bf4e91e01a89810dea3e02a766"
+    }
+  }
+}
