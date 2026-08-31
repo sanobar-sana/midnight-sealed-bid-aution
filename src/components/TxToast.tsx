@@ -1,5 +1,4 @@
-import React from 'react';
-import { CheckCircle, XCircle, Loader } from 'lucide-react';
+import { CheckCircle, XCircle, Loader, X } from 'lucide-react';
 
 interface TxToastProps {
   loading: boolean;
@@ -12,55 +11,42 @@ export default function TxToast({ loading, txHash, error, onClose }: TxToastProp
   if (!loading && !txHash && !error) return null;
 
   return (
-    <div style={styles.wrap}>
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full px-4 sm:px-0">
       {loading && (
-        <div style={{ ...styles.toast, borderColor: 'rgba(124,58,237,0.4)', background: 'rgba(124,58,237,0.1)' }}>
-          <div style={styles.spin}><Loader size={18} color="#8b5cf6" /></div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: '#f1f0ff' }}>Broadcasting Transaction</div>
-            <div style={{ fontSize: 12, color: '#9490c4', marginTop: 2 }}>Signing and submitting to Midnight testnet…</div>
+        <div className="flex items-start gap-3.5 p-4 rounded-2xl liquid-glass border border-cyan-500/40 shadow-2xl animate-in fade-in slide-in-from-bottom-3">
+          <Loader className="w-5 h-5 text-cyan-400 animate-spin shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-bold text-sm text-white">Broadcasting Transaction</div>
+            <div className="text-xs text-white/60 mt-0.5 leading-relaxed">Generating ZK proof and submitting to Midnight testnet…</div>
           </div>
         </div>
       )}
+
       {txHash && !loading && (
-        <div style={{ ...styles.toast, borderColor: 'rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.1)' }}>
-          <CheckCircle size={20} color="#10b981" />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: '#10b981' }}>Transaction Confirmed</div>
-            <code style={{ fontSize: 11, color: '#9490c4' }}>{txHash.slice(0, 40)}…</code>
+        <div className="flex items-start gap-3.5 p-4 rounded-2xl liquid-glass border border-emerald-500/40 shadow-2xl animate-in fade-in slide-in-from-bottom-3">
+          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-sm text-emerald-300">Transaction Confirmed</div>
+            <div className="text-xs font-mono text-emerald-200/80 truncate mt-0.5">{txHash}</div>
           </div>
-          <button style={styles.close} onClick={onClose}>✕</button>
+          <button onClick={onClose} className="text-emerald-400 hover:text-white p-1 rounded-lg transition cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
+
       {error && (
-        <div style={{ ...styles.toast, borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)' }}>
-          <XCircle size={20} color="#ef4444" />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: '#ef4444' }}>Transaction Failed</div>
-            <div style={{ fontSize: 12, color: '#9490c4', marginTop: 2 }}>{error}</div>
+        <div className="flex items-start gap-3.5 p-4 rounded-2xl liquid-glass border border-rose-500/40 shadow-2xl animate-in fade-in slide-in-from-bottom-3">
+          <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-bold text-sm text-rose-300">Transaction Failed</div>
+            <div className="text-xs text-rose-200/90 mt-0.5 leading-relaxed">{error}</div>
           </div>
-          <button style={styles.close} onClick={onClose}>✕</button>
+          <button onClick={onClose} className="text-rose-400 hover:text-white p-1 rounded-lg transition cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  wrap: {
-    position: 'fixed', bottom: 24, right: 24, zIndex: 999,
-    display: 'flex', flexDirection: 'column', gap: 12,
-    maxWidth: 380,
-  },
-  toast: {
-    display: 'flex', alignItems: 'flex-start', gap: 12,
-    background: '#0d0d2b', border: '1px solid',
-    borderRadius: 12, padding: '14px 16px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-  },
-  spin: { animation: 'spin 1s linear infinite' },
-  close: {
-    marginLeft: 'auto', background: 'none', border: 'none',
-    color: '#9490c4', cursor: 'pointer', fontSize: 14, padding: 2,
-  },
-};

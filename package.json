@@ -23,12 +23,18 @@
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
-    "vite-plugin-node-polyfills": "^0.28.0"
+    "vite-plugin-node-polyfills": "^0.28.0",
+    "ws": "^8.21.3"
   }
 }

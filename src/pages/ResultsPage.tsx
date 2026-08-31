@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -18,10 +18,11 @@ export default function ResultsPage() {
   const [copiedWinner, setCopiedWinner] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
 
-  const revealedCount = selectedAuction.bids.filter(b => b.revealed).length;
-  const filteredBids = selectedAuction.bids.filter(b =>
-    b.bidder.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    b.commitment.toLowerCase().includes(searchFilter.toLowerCase())
+  const revealedCount = selectedAuction.bids.filter((b) => b.revealed).length;
+  const filteredBids = selectedAuction.bids.filter(
+    (b) =>
+      b.bidder.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      b.commitment.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
   const handleCopyWinner = () => {
@@ -33,32 +34,33 @@ export default function ResultsPage() {
   };
 
   return (
-    <div style={styles.page}>
-      <div className="container">
+    <div className="pt-28 pb-20 min-h-screen w-full">
+      <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           
-          {/* Auction Selector Strip */}
-          <div style={styles.selectorWrapper}>
-            <div style={styles.selectorLabel}>
-              <Sparkles size={14} color="#818cf8" />
+          {/* Active Auction Selector Strip */}
+          <div className="p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-white/70">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
               <span>Select Auction:</span>
             </div>
-            <div style={styles.auctionPills}>
-              {auctions.map(a => {
+            <div className="flex flex-wrap gap-3">
+              {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
                   <button
                     key={a.id}
                     onClick={() => selectAuction(a.id)}
-                    style={{
-                      ...styles.pillBtn,
-                      ...(isSelected ? styles.pillBtnActive : {}),
-                    }}
+                    className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-white text-black shadow-xl scale-102'
+                        : 'liquid-glass text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
                   >
-                    <span style={{ fontSize: 18 }}>{a.imageEmoji}</span>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={styles.pillTitle}>{a.title}</div>
-                      <div style={styles.pillSub}>
+                    <span className="text-2xl">{a.imageEmoji}</span>
+                    <div className="text-left">
+                      <div className="text-xs font-bold leading-tight">{a.title}</div>
+                      <div className="text-[10px] opacity-70 font-normal mt-0.5">
                         {a.phase === 'finalized' ? '🏆 Finalized' : a.phase === 'reveal' ? '🔵 Reveal' : '🟢 Bidding'}
                       </div>
                     </div>
@@ -73,159 +75,170 @@ export default function ResultsPage() {
             <motion.div
               initial={{ scale: 0.98, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              style={styles.winnerHeroCard}
+              className="p-8 sm:p-14 rounded-3xl liquid-glass border border-amber-500/40 text-center shadow-2xl mb-8 relative overflow-hidden w-full"
             >
-              <div style={styles.winnerBadgePill}>
-                <Trophy size={14} color="#f59e0b" />
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-950/70 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold mb-6">
+                <Trophy className="w-4 h-4 text-amber-400" />
                 <span>Verified On-Chain Winner</span>
               </div>
 
-              <div style={styles.winnerAssetHeader}>
-                <span style={{ fontSize: 40 }}>{selectedAuction.imageEmoji}</span>
-                <div>
-                  <h1 style={styles.winnerAssetTitle}>{selectedAuction.title}</h1>
-                  <div style={{ color: '#94a3b8', fontSize: 13 }}>Finalized Auction Result</div>
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <span className="text-5xl sm:text-6xl">{selectedAuction.imageEmoji}</span>
+                <div className="text-left">
+                  <h1 className="text-2xl sm:text-5xl font-extrabold text-white">{selectedAuction.title}</h1>
+                  <div className="text-xs sm:text-sm text-white/60 mt-1">Finalized Auction Result</div>
                 </div>
               </div>
 
-              <div style={styles.winnerAmountDisplay}>
-                <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Winning Sealed Bid</div>
-                <div style={styles.winnerBigNumber}>
-                  {selectedAuction.winningBid?.toLocaleString()} <span style={{ fontSize: 24, color: '#f59e0b' }}>DUST</span>
+              <div className="my-8">
+                <div className="text-xs sm:text-sm font-bold uppercase tracking-widest text-white/50 mb-2">Winning Sealed Bid</div>
+                <div className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight">
+                  {selectedAuction.winningBid?.toLocaleString()} <span className="text-3xl sm:text-5xl text-amber-400">DUST</span>
                 </div>
               </div>
 
-              <div style={styles.winnerAddrBar}>
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>Winning Bidder:</span>
-                <code style={styles.winnerAddrText}>{selectedAuction.winner}</code>
-                <button onClick={handleCopyWinner} style={styles.copyBtn} title="Copy winning address">
-                  {copiedWinner ? <Check size={14} color="#10b981" /> : <Copy size={14} color="#94a3b8" />}
+              <div className="inline-flex items-center gap-3 p-4 px-6 rounded-2xl bg-black/60 border border-white/10 text-xs sm:text-sm max-w-full">
+                <span className="text-white/60">Winning Bidder:</span>
+                <code className="font-mono text-cyan-300 font-bold text-xs sm:text-sm">{selectedAuction.winner}</code>
+                <button onClick={handleCopyWinner} className="text-white/60 hover:text-white transition cursor-pointer">
+                  {copiedWinner ? <Check className="w-4.5 h-4.5 text-emerald-400" /> : <Copy className="w-4.5 h-4.5" />}
                 </button>
               </div>
 
-              <div style={styles.winnerCircuitFoot}>
-                <Shield size={14} color="#34d399" />
-                <span>Determined deterministically via <code>getAuctionResult()</code> circuit on Midnight testnet</span>
+              <div className="flex items-center justify-center gap-2 mt-8 text-xs sm:text-sm text-white/60">
+                <Shield className="w-4 h-4 text-emerald-400" />
+                <span>Determined deterministically via zero-knowledge circuit verification</span>
               </div>
             </motion.div>
           ) : selectedAuction.phase !== 'finalized' ? (
-            <div style={styles.pendingHeroCard}>
-              <div style={styles.pendingIconWrap}><AlertCircle size={36} color="#f59e0b" /></div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f8fafc' }}>Results Pending Finalization</h2>
-              <p style={{ fontSize: 14, color: '#94a3b8', maxWidth: 460, margin: '8px auto 20px' }}>
+            <div className="p-10 sm:p-16 rounded-3xl liquid-glass text-center mb-8 w-full">
+              <div className="w-16 h-16 rounded-2xl bg-amber-950/60 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Results Pending Finalization</h2>
+              <p className="text-xs sm:text-base text-white/60 max-w-lg mx-auto mb-6">
                 This auction is currently in the <strong>{selectedAuction.phase}</strong> phase. Bids are still sealed or being revealed. The official winning outcome will unlock once finalized.
               </p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                <a href="/reveal" style={styles.pendingActionBtn}>
-                  Go to Reveal Phase
-                </a>
-              </div>
+              <a
+                href="/reveal"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl transition"
+              >
+                Go to Reveal Phase
+              </a>
             </div>
           ) : (
-            <div style={styles.pendingHeroCard}>
-              <Award size={40} color="#64748b" />
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f8fafc', marginTop: 12 }}>No Valid Bids Revealed</h2>
-              <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 6 }}>The auction closed without any valid opened commitments.</p>
+            <div className="p-10 rounded-3xl liquid-glass text-center mb-8 w-full">
+              <Award className="w-14 h-14 text-white/40 mx-auto mb-3" />
+              <h2 className="text-xl font-bold text-white mb-1">No Valid Bids Revealed</h2>
+              <p className="text-xs sm:text-sm text-white/60">The auction closed without any valid opened commitments.</p>
             </div>
           )}
 
-          {/* Stats Breakdown Grid */}
-          <div style={styles.statsGrid}>
-            <div style={styles.statBox}>
-              <div style={styles.statBoxLabel}>Total Commitments</div>
-              <div style={styles.statBoxVal}>{selectedAuction.bidCount} Bids</div>
+          {/* Full-Width Stats Breakdown Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div className="p-5 sm:p-6 rounded-3xl liquid-glass">
+              <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Total Commitments</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-white mt-1.5">{selectedAuction.bidCount} Bids</div>
             </div>
-            <div style={styles.statBox}>
-              <div style={styles.statBoxLabel}>Revealed Rate</div>
-              <div style={{ ...styles.statBoxVal, color: '#22d3ee' }}>
+            <div className="p-5 sm:p-6 rounded-3xl liquid-glass">
+              <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Revealed Rate</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-cyan-400 mt-1.5">
                 {Math.round((revealedCount / (selectedAuction.bidCount || 1)) * 100)}%
               </div>
             </div>
-            <div style={styles.statBox}>
-              <div style={styles.statBoxLabel}>Top Revealed Bid</div>
-              <div style={{ ...styles.statBoxVal, color: '#f59e0b' }}>
+            <div className="p-5 sm:p-6 rounded-3xl liquid-glass">
+              <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Top Revealed Bid</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-amber-400 mt-1.5">
                 {selectedAuction.winningBid ? `${selectedAuction.winningBid.toLocaleString()} DUST` : 'Pending'}
               </div>
             </div>
-            <div style={styles.statBox}>
-              <div style={styles.statBoxLabel}>Circuit Verification</div>
-              <div style={{ ...styles.statBoxVal, color: '#34d399' }}>100% On-Chain</div>
+            <div className="p-5 sm:p-6 rounded-3xl liquid-glass">
+              <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Circuit Verification</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-emerald-400 mt-1.5">100% On-Chain</div>
             </div>
           </div>
 
-          {/* Full On-Chain Ledger & Proof Table */}
-          <div style={styles.ledgerCard}>
-            <div style={styles.ledgerHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Database size={18} color="#818cf8" />
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
-                  On-Chain Auction Ledger & Proof Records
-                </h3>
+          {/* Full-Width On-Chain Ledger & Proof Table */}
+          <div className="rounded-3xl liquid-glass overflow-hidden shadow-2xl w-full">
+            <div className="p-6 sm:p-8 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Database className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white">On-Chain Ledger & Proof Records</h3>
               </div>
-              
-              {/* Search Bar */}
-              <div style={styles.searchWrap}>
-                <Search size={14} color="#64748b" />
+
+              {/* Search */}
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-black/60 border border-white/15 w-full sm:w-80">
+                <Search className="w-4 h-4 text-white/40 shrink-0" />
                 <input
                   type="text"
                   placeholder="Filter by bidder or hash..."
                   value={searchFilter}
-                  onChange={e => setSearchFilter(e.target.value)}
-                  style={styles.searchInput}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="bg-transparent border-none text-xs sm:text-sm text-white placeholder-white/40 outline-none w-full"
                 />
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={styles.table}>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
-                  <tr>
-                    <th style={styles.th}>Rank</th>
-                    <th style={styles.th}>Bidder Public Key</th>
-                    <th style={styles.th}>Commitment Hash</th>
-                    <th style={styles.th}>Revealed Amount</th>
-                    <th style={styles.th}>Outcome</th>
+                  <tr className="bg-black/50 text-white/50 text-xs font-bold uppercase tracking-wider border-b border-white/10">
+                    <th className="py-4 px-6">Rank</th>
+                    <th className="py-4 px-6">Bidder Public Key</th>
+                    <th className="py-4 px-6">Commitment Hash</th>
+                    <th className="py-4 px-6">Revealed Amount</th>
+                    <th className="py-4 px-6">Outcome</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-white/10">
                   {filteredBids.map((b, i) => {
                     const isWinner = b.bidder === selectedAuction.winner;
                     return (
-                      <tr key={i} style={isWinner ? styles.trWinner : styles.tr}>
-                        <td style={styles.td}>
+                      <tr key={i} className={`transition ${isWinner ? 'bg-amber-950/30' : 'hover:bg-white/5'}`}>
+                        <td className="py-4 px-6 font-bold">
                           {isWinner ? (
-                            <span style={styles.crownRank}>👑 1</span>
+                            <span className="text-amber-400 font-extrabold text-sm sm:text-base">👑 1</span>
                           ) : b.revealed ? (
-                            <span style={styles.normalRank}>#{i + 1}</span>
+                            <span className="text-white/60">#{i + 1}</span>
                           ) : (
-                            <span style={{ color: '#64748b', fontSize: 12 }}>—</span>
+                            <span className="text-white/30">—</span>
                           )}
                         </td>
-                        <td style={styles.td}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontWeight: 600, color: '#f8fafc' }}>{b.bidder}</span>
-                            {isWinner && <span style={styles.winnerBadgeMini}>Winner</span>}
+                        <td className="py-4 px-6 font-semibold text-white">
+                          <div className="flex items-center gap-2">
+                            <span>{b.bidder}</span>
+                            {isWinner && (
+                              <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[10px] font-extrabold uppercase">
+                                Winner
+                              </span>
+                            )}
                           </div>
                         </td>
-                        <td style={styles.td}>
-                          <code style={styles.monoHash}>{b.commitment.slice(0, 18)}...{b.commitment.slice(-8)}</code>
+                        <td className="py-4 px-6 font-mono text-white/60">
+                          {b.commitment.slice(0, 22)}...{b.commitment.slice(-8)}
                         </td>
-                        <td style={styles.td}>
+                        <td className="py-4 px-6 font-bold">
                           {b.revealed && b.revealedAmount !== undefined ? (
-                            <span style={{ fontWeight: 700, color: isWinner ? '#f59e0b' : '#f8fafc', fontSize: 14 }}>
+                            <span className={isWinner ? 'text-amber-400 text-sm sm:text-base' : 'text-white'}>
                               {b.revealedAmount.toLocaleString()} DUST
                             </span>
                           ) : (
-                            <span style={{ color: '#64748b', fontSize: 12 }}>🔒 Sealed / Hidden</span>
+                            <span className="text-white/40 font-normal">🔒 Sealed / Hidden</span>
                           )}
                         </td>
-                        <td style={styles.td}>
+                        <td className="py-4 px-6">
                           {isWinner ? (
-                            <span style={styles.pillWinner}>🏆 Declared Winner</span>
+                            <span className="px-3 py-1 rounded-full bg-amber-950/80 text-amber-400 border border-amber-500/40 text-xs font-bold">
+                              🏆 Declared Winner
+                            </span>
                           ) : b.revealed ? (
-                            <span style={styles.pillValid}>✓ Valid Bid</span>
+                            <span className="px-3 py-1 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 text-xs font-semibold">
+                              ✓ Valid Bid
+                            </span>
                           ) : (
-                            <span style={styles.pillSealed}>🔒 Sealed</span>
+                            <span className="px-3 py-1 rounded-full liquid-glass text-cyan-300 text-xs font-semibold">
+                              🔒 Sealed
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -235,125 +248,9 @@ export default function ResultsPage() {
               </table>
             </div>
           </div>
+
         </motion.div>
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties | any> = {
-  page: { paddingTop: 90, paddingBottom: 60, minHeight: '100vh' },
-  selectorWrapper: {
-    background: 'rgba(13, 15, 38, 0.6)', border: '1px solid rgba(38, 43, 94, 0.6)',
-    borderRadius: 16, padding: '14px 20px', marginBottom: 24,
-    display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-  },
-  selectorLabel: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#f8fafc' },
-  auctionPills: { display: 'flex', gap: 10, flexWrap: 'wrap' },
-  pillBtn: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(38, 43, 94, 0.5)',
-    borderRadius: 12, padding: '8px 16px', color: '#94a3b8', cursor: 'pointer', transition: 'all 0.2s',
-  },
-  pillBtnActive: {
-    background: 'rgba(99, 102, 241, 0.15)', borderColor: 'rgba(99, 102, 241, 0.4)',
-    color: '#f8fafc', boxShadow: '0 4px 16px rgba(99, 102, 241, 0.25)',
-  },
-  pillTitle: { fontSize: 13, fontWeight: 700, color: '#f8fafc' },
-  pillSub: { fontSize: 11, color: '#64748b', marginTop: 2 },
-  winnerHeroCard: {
-    background: 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(245, 158, 11, 0.2) 0%, rgba(13, 15, 38, 0.9) 70%)',
-    border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 24, padding: '36px 32px',
-    textAlign: 'center' as const, boxShadow: '0 16px 48px rgba(245, 158, 11, 0.15)',
-    position: 'relative' as const, overflow: 'hidden' as const, marginBottom: 28,
-  },
-  winnerBadgePill: {
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)',
-    color: '#f59e0b', borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 700, marginBottom: 16,
-  },
-  winnerAssetHeader: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 20 },
-  winnerAssetTitle: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: '#f8fafc' },
-  winnerAmountDisplay: { margin: '20px 0' },
-  winnerBigNumber: { fontSize: 'clamp(40px, 6vw, 64px)', fontWeight: 900, color: '#f8fafc', letterSpacing: -1 },
-  winnerAddrBar: {
-    display: 'inline-flex', alignItems: 'center', gap: 10,
-    background: 'rgba(4, 4, 12, 0.6)', border: '1px solid rgba(38, 43, 94, 0.7)',
-    borderRadius: 14, padding: '10px 20px', margin: '0 auto', maxWidth: '100%',
-  },
-  winnerAddrText: { fontSize: 13, color: '#22d3ee', fontFamily: 'JetBrains Mono, monospace' },
-  copyBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' },
-  winnerCircuitFoot: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    marginTop: 24, fontSize: 12, color: '#94a3b8',
-  },
-  pendingHeroCard: {
-    background: 'rgba(13, 15, 38, 0.75)', border: '1px solid rgba(38, 43, 94, 0.7)',
-    borderRadius: 24, padding: '48px 32px', textAlign: 'center' as const, marginBottom: 28,
-  },
-  pendingIconWrap: {
-    width: 64, height: 64, borderRadius: 20, background: 'rgba(245, 158, 11, 0.1)',
-    border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', margin: '0 auto 16px',
-  },
-  pendingActionBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-    background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff',
-    borderRadius: 12, padding: '12px 24px', fontSize: 14, fontWeight: 700, textDecoration: 'none',
-  },
-  statsGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: 16, marginBottom: 28,
-  },
-  statBox: {
-    background: 'rgba(13, 15, 38, 0.6)', border: '1px solid rgba(38, 43, 94, 0.6)',
-    borderRadius: 16, padding: '18px 20px',
-  },
-  statBoxLabel: { fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 },
-  statBoxVal: { fontSize: 20, fontWeight: 800, color: '#f8fafc', marginTop: 4 },
-  ledgerCard: {
-    background: 'rgba(13, 15, 38, 0.75)', border: '1px solid rgba(38, 43, 94, 0.7)',
-    borderRadius: 24, overflow: 'hidden', backdropFilter: 'blur(16px)',
-  },
-  ledgerHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap',
-    gap: 14, padding: '20px 24px', borderBottom: '1px solid rgba(38, 43, 94, 0.7)',
-  },
-  searchWrap: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    background: '#04040c', border: '1px solid rgba(38, 43, 94, 0.7)',
-    borderRadius: 10, padding: '8px 14px', width: 260,
-  },
-  searchInput: {
-    background: 'none', border: 'none', color: '#f8fafc',
-    fontSize: 12, outline: 'none', width: '100%',
-  },
-  table: { width: '100%', borderCollapse: 'collapse' as const },
-  th: {
-    textAlign: 'left' as const, fontSize: 11, fontWeight: 700, color: '#64748b',
-    textTransform: 'uppercase', letterSpacing: 1, padding: '14px 24px',
-    background: 'rgba(4, 4, 12, 0.5)', borderBottom: '1px solid rgba(38, 43, 94, 0.6)',
-  },
-  td: { padding: '16px 24px', fontSize: 13, borderBottom: '1px solid rgba(38, 43, 94, 0.4)' },
-  tr: { transition: 'background 0.15s' },
-  trWinner: { background: 'rgba(245, 158, 11, 0.06)' },
-  crownRank: { color: '#f59e0b', fontWeight: 800, fontSize: 13 },
-  normalRank: { color: '#64748b', fontWeight: 700, fontSize: 12 },
-  winnerBadgeMini: {
-    background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b',
-    borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-  },
-  monoHash: { fontSize: 11, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' },
-  pillWinner: {
-    background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)',
-    color: '#f59e0b', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700,
-  },
-  pillValid: {
-    background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
-    color: '#34d399', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600,
-  },
-  pillSealed: {
-    background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)',
-    color: '#818cf8', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600,
-  },
-};
