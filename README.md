@@ -1,10 +1,25 @@
 # Midnight Sealed-Bid Auction
 
 [![CI](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml/badge.svg)](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=flat-square&logo=vercel)](https://midnight-sealed-bid-aution.vercel.app/)
+
+> 🚀 **Live Demo dApp**: [https://midnight-sealed-bid-aution.vercel.app/](https://midnight-sealed-bid-aution.vercel.app/)  
+> 📜 **Verified Preprod Contract**: `542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`
+
+---
 
 ## Initial Product Idea
 
 The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auction platform built on the Midnight blockchain to guarantee fair, manipulation-free, and front-running-resistant bidding. Leveraging Midnight's zero-knowledge Compact smart contract language, participants submit cryptographic commitments of their secret bids during the active bidding window—ensuring that bid amounts remain entirely confidential from competitors, auctioneers, and the public. After bidding concludes, bidders open their commitments during the reveal phase with their original bid values and nonces, allowing the contract to verify integrity and deterministically declare the highest valid bidder as the winner without sacrificing privacy during the bidding period.
+
+---
+
+## Live Demo & Deployed Contracts
+
+- **Live Application URL**: [https://midnight-sealed-bid-aution.vercel.app/](https://midnight-sealed-bid-aution.vercel.app/)
+- **Midnight Network**: `testnet-preview`
+- **Contract Address**: [`542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
+- **Explorer Verification**: [Midnight Block Explorer](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
 
 ---
 
