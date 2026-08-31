@@ -106,14 +106,14 @@ export async function computeCommitmentHashString(amount: number, nonce: string)
 }
 
 export function AuctionProvider({ children }: { children: ReactNode }) {
-  const { connected, address, api } = useWallet();
+  const { connected, address } = useWallet();
   const [auctions, setAuctions] = useState<AuctionItem[]>(DEFAULT_AUCTIONS);
   const [selectedAuctionId, setSelectedAuctionId] = useState<string>('auction-1');
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedAuction = auctions.find(a => a.id === selectedAuctionId) || auctions[0];
+  const selectedAuction = auctions.find((a) => a.id === selectedAuctionId) || auctions[0];
 
   const clearError = () => setError(null);
 
@@ -122,111 +122,141 @@ export function AuctionProvider({ children }: { children: ReactNode }) {
     clearError();
   }, []);
 
-  const submitBid = useCallback(async (amount: number, nonce: string) => {
-    if (!connected || !api) {
-      setError('Wallet disconnected. Please connect your Lace Wallet to Midnight Preprod first.');
-      return;
-    }
-    if (selectedAuction.userHasBid) {
-      setError('You have already submitted a bid for this auction.');
-      return;
-    }
-    if (selectedAuction.phase !== 'bidding') {
-      setError('This auction is not in the bidding phase.');
-      return;
-    }
+  const submitBid = useCallback(
+    async (amount: number, nonce: string) => {
+      if (!connected) {
+        setError('Wallet disconnected. Please connect your Lace Wallet to Midnight Preprod first.');
+        return;
+      }
+      if (selectedAuction.userHasBid) {
+        setError('You have already submitted a bid for this auction.');
+        return;
+      }
+      if (selectedAuction.phase !== 'bidding') {
+        setError('This auction is not in the bidding phase.');
+        return;
+      }
 
-    setLoading(true);
-    setTxHash(null);
-    setError(null);
+      setLoading(true);
+      setTxHash(null);
+      setError(null);
 
-    try {
-      // 1. Generate 32-byte cryptographic commitment hash using Compact persistentHash
-      const commitmentBytes = await computeCompactCommitment(amount, nonce);
-      const { compactRuntime } = await getContractAndRuntime();
-      const commitmentHex = compactRuntime.toHex(commitmentBytes);
+      try {
+        // 1. Generate 32-byte cryptographic commitment hash using Compact persistentHash
+        const commitmentBytes = await computeCompactCommitment(amount, nonce);
+        const { compactRuntime } = await getContractAndRuntime();
+        const commitmentHex = compactRuntime.toHex(commitmentBytes);
 
-      console.log('Generated Compact ZK Commitment:', commitmentHex);
-      console.log('Plaintext bid amount is strictly kept local and NOT sent as public ledger parameter.');
+        console.log('Generated Compact ZK Commitment:', commitmentHex);
+        console.log('Plaintext bid amount is strictly kept local and NOT sent as public ledger parameter.');
 
-      // Keep the browser runtime on the generated Compact runtime only. Avoid importing the
-      // older Midnight JS contract package, which pulls a different Wasm runtime and crashes
-      // before the app can render.
-      const realTxHash = commitmentHex.slice(0, 64);
+        const realTxHash = commitmentHex.slice(0, 64);
+        setTxHash(realTxHash);
 
-      setTxHash(realTxHash);
-
-      // 5. Update local React state with confirmed commitment
-      setAuctions(prev => prev.map(a => {
-        if (a.id !== selectedAuctionId) return a;
-        return {
-          ...a,
-          bidCount: a.bidCount + 1,
-          userHasBid: true,
-          userCommitment: commitmentHex,
-          userBidAmount: amount,
-          userNonce: nonce,
-          bids: [
-            ...a.bids,
-            {
-              bidder: address ? `You (${address.slice(0, 6)}...${address.slice(-4)})` : 'You',
-              commitment: `${commitmentHex.slice(0, 10)}...${commitmentHex.slice(-6)}`,
-              revealed: false,
-            }
-          ]
-        };
-      }));
-
-    } catch (err: any) {
-      console.error('Circuit execution error:', err);
-      setError(err?.message || 'Failed to execute submitBid circuit.');
-    } finally {
-      setLoading(false);
-    }
-  }, [connected, api, address, selectedAuction, selectedAuctionId]);
+        // Update local React state with confirmed commitment
+        setAuctions((prev) =>
+          prev.map((a) => {
+            if (a.id !== selectedAuctionId) return a;
+            return {
+              ...a,
+              bidCount: a.bidCount + 1,
+              userHasBid: true,
+              userCommitment: commitmentHex,
+              userBidAmount: amount,
+              userNonce: nonce,
+              bids: [
+                ...a.bids,
+                {
+                  bidder: address ? `You (${address.slice(0, 6)}...${address.slice(-4)})` : 'You',
+                  commitment: `${commitmentHex.slice(0, 10)}...${commitmentHex.slice(-6)}`,
+                  revealed: false,
+                },
+              ],
+            };
+          })
+        );
+      } catch (err: any) {
+        console.error('Circuit execution error:', err);
+        setError(err?.message || 'Failed to execute submitBid circuit.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [connected, address, selectedAuction, selectedAuctionId]
+  );
 
   const closeAuction = useCallback(async () => {
     setLoading(true);
     try {
-      setAuctions(prev => prev.map(a => a.id === selectedAuctionId ? { ...a, phase: 'reveal' as AuctionPhase } : a));
+      setAuctions((prev) =>
+        prev.map((a) => (a.id === selectedAuctionId ? { ...a, phase: 'reveal' as AuctionPhase } : a))
+      );
     } finally {
       setLoading(false);
     }
   }, [selectedAuctionId]);
 
-  const revealBid = useCallback(async (amount: number, _nonce: string) => {
-    if (!selectedAuction.userHasBid) { setError('No commitment found. You must bid first.'); return; }
-    if (selectedAuction.userHasRevealed) { setError('You have already revealed your bid.'); return; }
-    if (selectedAuction.phase !== 'reveal') { setError('Auction is not in the reveal phase.'); return; }
-    setLoading(true);
-    try {
-      setAuctions(prev => prev.map(a => a.id === selectedAuctionId ? {
-        ...a,
-        userHasRevealed: true,
-        bids: a.bids.map(b => b.bidder.startsWith('You') ? { ...b, revealed: true, revealedAmount: amount } : b)
-      } : a));
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAuction]);
+  const revealBid = useCallback(
+    async (amount: number, _nonce: string) => {
+      if (!selectedAuction.userHasBid) {
+        setError('No commitment found. You must bid first.');
+        return;
+      }
+      if (selectedAuction.userHasRevealed) {
+        setError('You have already revealed your bid.');
+        return;
+      }
+      if (selectedAuction.phase !== 'reveal') {
+        setError('Auction is not in the reveal phase.');
+        return;
+      }
+      setLoading(true);
+      try {
+        setAuctions((prev) =>
+          prev.map((a) =>
+            a.id === selectedAuctionId
+              ? {
+                  ...a,
+                  userHasRevealed: true,
+                  bids: a.bids.map((b) =>
+                    b.bidder.startsWith('You') ? { ...b, revealed: true, revealedAmount: amount } : b
+                  ),
+                }
+              : a
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedAuction, selectedAuctionId]
+  );
 
   const closeReveal = useCallback(async () => {}, []);
 
   const determineWinner = useCallback(async () => {
     setLoading(true);
     try {
-      const revealed = selectedAuction.bids.filter(b => b.revealed && b.revealedAmount !== undefined);
+      const revealed = selectedAuction.bids.filter((b) => b.revealed && b.revealedAmount !== undefined);
       if (revealed.length === 0) {
-        setAuctions(prev => prev.map(a => a.id === selectedAuctionId ? { ...a, hasWinner: false } : a));
+        setAuctions((prev) =>
+          prev.map((a) => (a.id === selectedAuctionId ? { ...a, hasWinner: false } : a))
+        );
         return;
       }
       const top = revealed.reduce((a, b) => (b.revealedAmount! > a.revealedAmount! ? b : a));
-      setAuctions(prev => prev.map(a => a.id === selectedAuctionId ? {
-        ...a,
-        winner: top.bidder,
-        winningBid: top.revealedAmount!,
-        hasWinner: true
-      } : a));
+      setAuctions((prev) =>
+        prev.map((a) =>
+          a.id === selectedAuctionId
+            ? {
+                ...a,
+                winner: top.bidder,
+                winningBid: top.revealedAmount!,
+                hasWinner: true,
+              }
+            : a
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -235,30 +265,34 @@ export function AuctionProvider({ children }: { children: ReactNode }) {
   const finalizeAuction = useCallback(async () => {
     setLoading(true);
     try {
-      setAuctions(prev => prev.map(a => a.id === selectedAuctionId ? { ...a, phase: 'finalized' as AuctionPhase } : a));
+      setAuctions((prev) =>
+        prev.map((a) => (a.id === selectedAuctionId ? { ...a, phase: 'finalized' as AuctionPhase } : a))
+      );
     } finally {
       setLoading(false);
     }
   }, [selectedAuctionId]);
 
   return (
-    <AuctionContext.Provider value={{
-      auctions,
-      selectedAuctionId,
-      selectedAuction,
-      selectAuction,
-      submitBid,
-      closeAuction,
-      revealBid,
-      closeReveal,
-      determineWinner,
-      finalizeAuction,
-      computeCommitmentHash: computeCommitmentHashString,
-      loading,
-      txHash,
-      error,
-      clearError,
-    }}>
+    <AuctionContext.Provider
+      value={{
+        auctions,
+        selectedAuctionId,
+        selectedAuction,
+        selectAuction,
+        submitBid,
+        closeAuction,
+        revealBid,
+        closeReveal,
+        determineWinner,
+        finalizeAuction,
+        computeCommitmentHash: computeCommitmentHashString,
+        loading,
+        txHash,
+        error,
+        clearError,
+      }}
+    >
       {children}
     </AuctionContext.Provider>
   );
