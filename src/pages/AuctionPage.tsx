@@ -5,7 +5,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Hash,
   CheckCircle,
   Shield,
   Clock,
@@ -16,6 +15,8 @@ import {
   Sparkles,
   Database,
   Wallet,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAuction } from '../context/AuctionContext';
@@ -93,32 +94,32 @@ export default function AuctionPage() {
   };
 
   return (
-    <div className="pt-28 pb-20 min-h-screen w-full">
+    <div className="pt-28 pb-20 min-h-screen w-full max-w-full overflow-x-hidden">
       <TxToast loading={loading} txHash={txHash} error={error} onClose={clearError} />
 
       <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           
           {/* Active Auction Selector Strip */}
-          <div className="p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-white/70">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Active Auctions:</span>
+          <div className="p-4 sm:p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-white/80">
+              <Sparkles className="w-4.5 h-4.5 text-cyan-400" />
+              <span>Select Active Auction:</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3">
               {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
                   <button
                     key={a.id}
                     onClick={() => selectAuction(a.id)}
-                    className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-3 px-4 sm:px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-white text-black shadow-xl scale-102'
+                        ? 'bg-white text-black shadow-xl scale-[1.02]'
                         : 'liquid-glass text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    <span className="text-2xl">{a.imageEmoji}</span>
+                    <span className="text-xl sm:text-2xl">{a.imageEmoji}</span>
                     <div className="text-left">
                       <div className="text-xs font-bold leading-tight">{a.title}</div>
                       <div className="text-[10px] opacity-70 font-normal mt-0.5">
@@ -138,7 +139,7 @@ export default function AuctionPage() {
             <div className="xl:col-span-5 flex flex-col gap-6">
               
               {/* Asset Hero Card */}
-              <div className="p-6 sm:p-8 rounded-3xl liquid-glass flex flex-col justify-between">
+              <div className="p-6 sm:p-8 rounded-3xl liquid-glass flex flex-col justify-between shadow-2xl">
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-4xl shadow-inner">
@@ -212,7 +213,7 @@ export default function AuctionPage() {
               </div>
 
               {/* ZK Guarantees Card */}
-              <div className="p-6 rounded-3xl liquid-glass">
+              <div className="p-6 rounded-3xl liquid-glass shadow-xl">
                 <div className="flex items-center gap-2 mb-3 text-sm font-bold text-white">
                   <Shield className="w-4 h-4 text-cyan-400" />
                   <span>Midnight ZK Privacy Guarantees</span>
@@ -305,12 +306,19 @@ export default function AuctionPage() {
                           </div>
                           <h3 className="text-xl font-bold text-emerald-400 mb-2">Sealed Bid Submitted!</h3>
                           <p className="text-xs sm:text-sm text-white/60 max-w-md mx-auto mb-6">
-                            Your 32-byte commitment hash is recorded on-chain. When bidding closes, proceed to the <strong>Reveal Bids</strong> tab to open your bid.
+                            Your 32-byte commitment hash is recorded on-chain. When bidding closes, proceed to the <strong>Reveal Bids</strong> page to open your bid.
                           </p>
-                          <div className="p-4 rounded-2xl bg-black/60 border border-white/10 max-w-md mx-auto text-left">
+                          <div className="p-4 rounded-2xl bg-black/60 border border-white/10 max-w-md mx-auto text-left mb-6">
                             <div className="text-[10px] uppercase font-bold text-white/40 mb-1">Your Committed Hash</div>
                             <code className="text-xs sm:text-sm font-mono text-cyan-300 break-all">{selectedAuction.userCommitment}</code>
                           </div>
+                          <Link
+                            to="/reveal"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl hover:bg-white/90 transition"
+                          >
+                            <span>Proceed to Reveal Phase</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </Link>
                         </div>
                       ) : selectedAuction.phase !== 'bidding' ? (
                         <div className="text-center py-10 px-4">
@@ -318,9 +326,16 @@ export default function AuctionPage() {
                             <Clock className="w-8 h-8" />
                           </div>
                           <h3 className="text-xl font-bold text-amber-400 mb-2">Bidding Phase Closed</h3>
-                          <p className="text-xs sm:text-sm text-white/60 max-w-sm mx-auto">
+                          <p className="text-xs sm:text-sm text-white/60 max-w-sm mx-auto mb-6">
                             This auction is currently in the <strong>{selectedAuction.phase}</strong> phase. New commitments cannot be submitted.
                           </p>
+                          <Link
+                            to={selectedAuction.phase === 'reveal' ? '/reveal' : '/results'}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl hover:bg-white/90 transition"
+                          >
+                            <span>View {selectedAuction.phase === 'reveal' ? 'Reveal Phase' : 'Results Ledger'}</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </Link>
                         </div>
                       ) : (
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -364,9 +379,9 @@ export default function AuctionPage() {
                               <button
                                 type="button"
                                 onClick={handleGenerateNonce}
-                                className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-bold transition cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-bold transition cursor-pointer"
                               >
-                                <Hash className="w-3.5 h-3.5" />
+                                <RefreshCw className="w-3.5 h-3.5" />
                                 <span>Auto-Generate</span>
                               </button>
                             </div>
@@ -449,7 +464,7 @@ export default function AuctionPage() {
                     </div>
                   )}
 
-                  {/* Tab 3: Admin Controls */}
+                  {/* Tab 3: Phase Controls */}
                   {activeTab === 'admin' && (
                     <div className="p-6 sm:p-8 flex flex-col gap-5">
                       <div className="text-xs sm:text-sm text-white/60 mb-2">Control the phased execution of the auction smart contract.</div>

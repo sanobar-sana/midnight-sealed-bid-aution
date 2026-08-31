@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Eye,
@@ -12,6 +13,7 @@ import {
   Lock,
   Zap,
   Check,
+  ArrowRight,
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAuction } from '../context/AuctionContext';
@@ -50,19 +52,19 @@ export default function RevealPage() {
   const sealedBids = selectedAuction.bids.filter((b) => !b.revealed);
 
   return (
-    <div className="pt-28 pb-20 min-h-screen w-full">
+    <div className="pt-28 pb-20 min-h-screen w-full max-w-full overflow-x-hidden">
       <TxToast loading={loading} txHash={txHash} error={error} onClose={clearError} />
 
       <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           
           {/* Active Auction Selector Strip */}
-          <div className="p-5 rounded-3xl liquid-glass mb-6 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-white/70">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Select Auction:</span>
+          <div className="p-4 sm:p-5 rounded-3xl liquid-glass mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-white/80">
+              <Sparkles className="w-4.5 h-4.5 text-cyan-400" />
+              <span>Select Auction to Reveal:</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3">
               {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
@@ -73,13 +75,13 @@ export default function RevealPage() {
                       setAmount(a.userBidAmount ? String(a.userBidAmount) : '');
                       setNonce(a.userNonce || '');
                     }}
-                    className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-3 px-4 sm:px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-white text-black shadow-xl scale-102'
+                        ? 'bg-white text-black shadow-xl scale-[1.02]'
                         : 'liquid-glass text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    <span className="text-2xl">{a.imageEmoji}</span>
+                    <span className="text-xl sm:text-2xl">{a.imageEmoji}</span>
                     <div className="text-left">
                       <div className="text-xs font-bold leading-tight">{a.title}</div>
                       <div className="text-[10px] opacity-70 font-normal mt-0.5">
@@ -154,6 +156,10 @@ export default function RevealPage() {
                     <p className="text-xs sm:text-sm text-white/60 max-w-xs mx-auto mb-6">
                       You did not submit a sealed bid for this auction during the commitment window.
                     </p>
+                    <Link to="/auction" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl hover:bg-white/90 transition">
+                      <span>View Live Auctions</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 ) : selectedAuction.userHasRevealed ? (
                   <div className="text-center py-10">
@@ -161,9 +167,13 @@ export default function RevealPage() {
                       <CheckCircle className="w-8 h-8" />
                     </div>
                     <h3 className="text-xl font-bold text-emerald-400 mb-2">Bid Successfully Opened & Verified!</h3>
-                    <p className="text-xs sm:text-sm text-white/60 max-w-sm mx-auto">
+                    <p className="text-xs sm:text-sm text-white/60 max-w-sm mx-auto mb-6">
                       Your bid of <strong>{selectedAuction.userBidAmount?.toLocaleString()} DUST</strong> has been validated by the Compact zero-knowledge circuit.
                     </p>
+                    <Link to="/results" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl hover:bg-white/90 transition">
+                      <span>View Results Ledger</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 ) : selectedAuction.phase !== 'reveal' ? (
                   <div className="text-center py-10">
@@ -171,11 +181,15 @@ export default function RevealPage() {
                     <h3 className="text-lg font-bold text-amber-400 mb-2">
                       {selectedAuction.phase === 'bidding' ? 'Reveal Phase Not Open Yet' : 'Auction Already Finalized'}
                     </h3>
-                    <p className="text-xs sm:text-sm text-white/60 max-w-xs mx-auto">
+                    <p className="text-xs sm:text-sm text-white/60 max-w-xs mx-auto mb-6">
                       {selectedAuction.phase === 'bidding'
                         ? 'The bidding window is active. Once bidding closes, the reveal window will open.'
                         : 'This auction has concluded and results are recorded in the ledger.'}
                     </p>
+                    <Link to={selectedAuction.phase === 'bidding' ? '/auction' : '/results'} className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl hover:bg-white/90 transition">
+                      <span>Go to {selectedAuction.phase === 'bidding' ? 'Bidding Console' : 'Results Ledger'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 ) : (
                   <form onSubmit={handleReveal} className="flex flex-col gap-6">
@@ -308,23 +322,23 @@ export default function RevealPage() {
               </div>
 
               {/* Admin Actions */}
-              <div className="p-6 rounded-3xl liquid-glass flex flex-col gap-4">
+              <div className="p-6 rounded-3xl liquid-glass flex flex-col gap-4 shadow-xl">
                 <div className="flex items-center gap-2 text-sm font-bold text-white">
                   <Zap className="w-4 h-4 text-cyan-400" />
-                  <span>Finalization Controls</span>
+                  <span>Phase Transition Actions</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     onClick={determineWinner}
-                    disabled={selectedAuction.phase !== 'reveal' || loading}
+                    disabled={loading}
                     className="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Determine Winner
                   </button>
                   <button
                     onClick={finalizeAuction}
-                    disabled={loading}
+                    disabled={selectedAuction.phase === 'finalized' || loading}
                     className="p-4 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Finalize Auction
