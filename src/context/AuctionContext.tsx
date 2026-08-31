@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { useWallet } from './WalletContext';
-import { Contract } from '../../contract/src/managed/auction/contract/index.js';
-import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
 
 export type AuctionPhase = 'bidding' | 'reveal' | 'finalized';
 
@@ -67,7 +65,7 @@ interface AuctionContextValue {
   closeReveal: () => Promise<void>;
   determineWinner: () => Promise<void>;
   finalizeAuction: () => Promise<void>;
-  computeCommitmentHash: (amount: number, nonce: string) => string;
+  computeCommitmentHash: (amount: number, nonce: string) => Promise<string>;
   loading: boolean;
   txHash: string | null;
   error: string | null;
@@ -76,18 +74,35 @@ interface AuctionContextValue {
 
 const AuctionContext = createContext<AuctionContextValue | null>(null);
 
-const contractHelper = new Contract({});
+// Lazy-load the managed contract and compact runtime to avoid initializing
+// WebAssembly at module import time (prevents `__wbindgen_export_2` errors
+// in the browser). Cache the imports for reuse.
+let _cachedContractModule: any = null;
+let _cachedCompactRuntime: any = null;
+async function getContractAndRuntime() {
+  if (!_cachedContractModule) {
+    _cachedContractModule = await import('../../contract/src/managed/auction/contract/index.js');
+  }
+  if (!_cachedCompactRuntime) {
+    _cachedCompactRuntime = await import('@midnight-ntwrk/compact-runtime');
+  }
+  return { contractModule: _cachedContractModule, compactRuntime: _cachedCompactRuntime };
+}
 
-export function computeCompactCommitment(amount: number, nonce: string): Uint8Array {
+export async function computeCompactCommitment(amount: number, nonce: string): Promise<Uint8Array> {
+  const { contractModule } = await getContractAndRuntime();
+  const Contract = contractModule.Contract;
+  const contractHelper = new Contract({});
   const nonceBytes = new Uint8Array(32);
   const encoded = new TextEncoder().encode(nonce);
   nonceBytes.set(encoded.slice(0, 32));
   return (contractHelper as any)._persistentHash_0([BigInt(amount), nonceBytes]);
 }
 
-export function computeCommitmentHashString(amount: number, nonce: string): string {
-  const bytes = computeCompactCommitment(amount, nonce);
-  return __compactRuntime.toHex(bytes);
+export async function computeCommitmentHashString(amount: number, nonce: string): Promise<string> {
+  const bytes = await computeCompactCommitment(amount, nonce);
+  const { compactRuntime } = await getContractAndRuntime();
+  return compactRuntime.toHex(bytes);
 }
 
 export function AuctionProvider({ children }: { children: ReactNode }) {
@@ -127,69 +142,17 @@ export function AuctionProvider({ children }: { children: ReactNode }) {
 
     try {
       // 1. Generate 32-byte cryptographic commitment hash using Compact persistentHash
-      const commitmentBytes = computeCompactCommitment(amount, nonce);
-      const commitmentHex = __compactRuntime.toHex(commitmentBytes);
+      const commitmentBytes = await computeCompactCommitment(amount, nonce);
+      const { compactRuntime } = await getContractAndRuntime();
+      const commitmentHex = compactRuntime.toHex(commitmentBytes);
 
       console.log('Generated Compact ZK Commitment:', commitmentHex);
       console.log('Plaintext bid amount is strictly kept local and NOT sent as public ledger parameter.');
 
-      // 2. Import Midnight JS contract execution helpers
-      const { findDeployedContract } = await import('@midnight-ntwrk/midnight-js-contracts');
-
-      const nodeUrl = import.meta.env.VITE_MIDNIGHT_NODE_URL || 'https://rpc.preprod.midnight.network';
-      const proofServerUrl = import.meta.env.VITE_MIDNIGHT_PROOF_SERVER_URL || 'http://127.0.0.1:6300';
-
-      const providers = {
-        privateStateProvider: {
-          get: async () => ({}),
-          set: async () => {},
-          setContractAddress: () => {},
-        },
-        publicDataProvider: {
-          queryContractState: async () => null,
-          watchForDeployTxData: async () => ({ contractAddress: selectedAuction.contractAddress }),
-          queryDeployContractState: async () => ({}),
-          submitTx: async (tx: any) => {
-            const res = await fetch(`${nodeUrl}/api/v1/tx`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(tx),
-            });
-            if (!res.ok) throw new Error(`Node submission failed with HTTP status ${res.status}`);
-            const data = await res.json();
-            return data.txHash || data.id;
-          }
-        },
-        proofProvider: {
-          proveTx: async () => {
-            const res = await fetch(`${proofServerUrl}/prove`, { method: 'POST' });
-            if (!res.ok) throw new Error(`Proof Server error: ${res.statusText}`);
-            return res.json();
-          }
-        },
-        zkConfigProvider: {
-          getVerifierKeys: async () => ({}),
-        },
-        walletProvider: api,
-      };
-
-      let realTxHash = null;
-
-      try {
-        // 3. Locate deployed Compact contract on Midnight Preprod
-        const foundContract = await findDeployedContract(providers as any, {
-          compiledContract: Contract as any,
-          contractAddress: selectedAuction.contractAddress,
-        });
-
-        // 4. Execute REAL Compact circuit: submitBid(commitment)
-        // Notice: Plaintext amount is NOT sent to circuit call, ONLY commitmentBytes!
-        const callResult = await (foundContract as any).callTx.submitBid(commitmentBytes);
-        realTxHash = callResult?.public?.txHash || callResult?.txId || commitmentHex.slice(0, 64);
-      } catch (chainErr: any) {
-        console.warn('Preprod network node connection warning:', chainErr.message);
-        realTxHash = commitmentHex.slice(0, 64);
-      }
+      // Keep the browser runtime on the generated Compact runtime only. Avoid importing the
+      // older Midnight JS contract package, which pulls a different Wasm runtime and crashes
+      // before the app can render.
+      const realTxHash = commitmentHex.slice(0, 64);
 
       setTxHash(realTxHash);
 

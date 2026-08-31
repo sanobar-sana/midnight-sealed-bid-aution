@@ -45,16 +45,20 @@ export default function AuctionPage() {
 
   // Live compute preview hash using Compact persistentHash
   useEffect(() => {
+    let mounted = true;
     if (amount && nonce) {
-      try {
-        const hash = computeCommitmentHash(Number(amount), nonce);
-        setPreviewHash(hash);
-      } catch {
-        setPreviewHash(null);
-      }
+      (async () => {
+        try {
+          const hash = await computeCommitmentHash(Number(amount), nonce);
+          if (mounted) setPreviewHash(hash);
+        } catch {
+          if (mounted) setPreviewHash(null);
+        }
+      })();
     } else {
       setPreviewHash(null);
     }
+    return () => { mounted = false; };
   }, [amount, nonce, computeCommitmentHash]);
 
   const handleGenerateNonce = () => {

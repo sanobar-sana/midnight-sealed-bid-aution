@@ -14,5 +14,14 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    exclude: [
+      '@midnight-ntwrk/compact-runtime',
+      '@midnight-ntwrk/midnight-js-protocol',
+      '@midnight-ntwrk/midnight-js-contracts',
+      '@midnight-ntwrk/midnight-js-types',
+      '@midnightntwrk/onchain-runtime-v4',
+    ],
+  },
 })
 

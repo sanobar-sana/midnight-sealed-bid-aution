@@ -1,0 +1,15 @@
+[33m3b8eb0d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix contract test command for CI
+[33m6832408[m Add CI workflow for tests and build
+[33m7a6b94c[m feat(ui): complete modern visual redesign for auction, reveal, and results pages
+[33m640f603[m feat(ui): complete modern visual redesign for auction, reveal, and results pages
+[33m46be705[m feat(ui): add interactive demo auctions with multi-auction state and phase switching
+[33ma31a56f[m feat(ui): add interactive demo auctions with multi-auction state and phase switching
+[33mb4b7556[m feat(ui): add full React frontend at root with Lace wallet integration and contract subfolder
+[33m0e8e60d[m feat(ui): add full React frontend at root with Lace wallet integration and contract subfolder
+[33maca7a1a[m refactor: flatten repo structure - move contract contents to root
+[33meb36fa7[m refactor: flatten repo structure - move contract contents to root
+[33mc268e6b[m docs: add compile and deployment screenshots with real contract address
+[33m5845621[m docs: add compile and deployment screenshots with real contract address
+[33med8a1e0[m docs: add comprehensive documentation, architecture guide, and setup instructions
+[33medbd740[m docs: add comprehensive documentation, architecture guide, and setup instructions
+[33m0fa2879[m feat(deploy): add deployment script and testnet deployment record
