@@ -2,8 +2,10 @@
 
 [![CI](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml/badge.svg)](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=flat-square&logo=vercel)](https://midnight-sealed-bid-aution.vercel.app/)
+[![Demo Video](https://img.shields.io/badge/Demo%20Video-YouTube-red?style=flat-square&logo=youtube)](https://youtu.be/CyLXJqZhW1w)
 
 > 🚀 **Live Demo dApp**: [https://midnight-sealed-bid-aution.vercel.app/](https://midnight-sealed-bid-aution.vercel.app/)  
+> 🎬 **Demo Video**: [https://youtu.be/CyLXJqZhW1w](https://youtu.be/CyLXJqZhW1w)  
 > 📜 **Verified Preprod Contract**: `542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`
 
 ---
@@ -17,6 +19,7 @@ The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auctio
 ## Live Demo & Deployed Contracts
 
 - **Live Application URL**: [https://midnight-sealed-bid-aution.vercel.app/](https://midnight-sealed-bid-aution.vercel.app/)
+- **Demo Video Walkthrough**: [https://youtu.be/CyLXJqZhW1w](https://youtu.be/CyLXJqZhW1w)
 - **Midnight Network**: `testnet-preview`
 - **Contract Address**: [`542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
 - **Explorer Verification**: [Midnight Block Explorer](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
