@@ -1,8 +1,25 @@
 # Midnight Sealed-Bid Auction
 
+[![CI](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml/badge.svg)](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml)
+
 ## Initial Product Idea
 
 The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auction platform built on the Midnight blockchain to guarantee fair, manipulation-free, and front-running-resistant bidding. Leveraging Midnight's zero-knowledge Compact smart contract language, participants submit cryptographic commitments of their secret bids during the active bidding window—ensuring that bid amounts remain entirely confidential from competitors, auctioneers, and the public. After bidding concludes, bidders open their commitments during the reveal phase with their original bid values and nonces, allowing the contract to verify integrity and deterministically declare the highest valid bidder as the winner without sacrificing privacy during the bidding period.
+
+---
+
+## Privacy Model: What an Observer Can and Cannot Learn
+
+| Data / Interaction | Observer Status | How Midnight Enforces Privacy |
+| :--- | :--- | :--- |
+| **Bid Amount during Bidding** | ❌ **CANNOT LEARN** | Bidders submit 32-byte `persistentHash([bid, nonce])`. Plaintext amount never leaves local device. |
+| **Secret Nonce / Salt** | ❌ **CANNOT LEARN** | Processed strictly inside client-side Compact ZK circuit as private witness data. |
+| **Unrevealed Competitor Bids** | ❌ **CANNOT LEARN** | Impossible to reverse-engineer commitments without knowing secret nonces. |
+| **Bidders Who Submitted Bids** | ✅ **CAN LEARN** | Public key identifier recorded in on-chain `bids` map. |
+| **Total Bid Count** | ✅ **CAN LEARN** | On-chain counter `bidCount` publicly visible. |
+| **Auction Phase Status** | ✅ **CAN LEARN** | Contract phase state (`bidding`, `reveal`, `finalized`) is public. |
+| **Revealed Valid Bids** | ✅ **CAN LEARN** | Opened valid bids recorded in `revealedBids` after successful ZK verification. |
+| **Final Winner & Winning Amount** | ✅ **CAN LEARN** | Determined deterministically on-chain after reveal phase completes. |
 
 ---
 
@@ -10,9 +27,11 @@ The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auctio
 
 ```
 midnight-sealed-bid-auction/
+├── .github/workflows/       # CI/CD Pipeline (GitHub Actions ci.yml)
+│   └── ci.yml
 ├── src/                    # Frontend React application (App, Pages, Context, Components)
 │   ├── components/         # Navbar (with mobile hamburger), Footer, TxToast
-│   ├── context/            # WalletContext (Lace Wallet connection) & AuctionContext
+│   ├── context/            # WalletContext (Lace Wallet connection + simulator) & AuctionContext
 │   ├── pages/              # Home, Auction (Bidding), Reveal, Results, HowItWorks
 │   ├── App.tsx             # Main routing and provider setup
 │   └── main.tsx            # React application entry point
@@ -99,7 +118,7 @@ Private witness data is processed purely off-chain on the user's local machine w
 ## Local Setup & Development Instructions
 
 ### Prerequisites
-- **Node.js**: `v20.0.0` or later (tested on Node.js `v26.5.1`)
+- **Node.js**: `v20.0.0` or later
 - **Compact Toolchain**: Version `0.34.0` / compiler `0.5.2`
 
 ### 1. Clone the Repository & Install Dependencies
@@ -143,24 +162,28 @@ npm run contract:deploy
 ### Test Suite Output (12/12 Passing)
 ```
 ▶ Sealed-Bid Auction Compact Contract Test Suite
-  ✔ 1. Auction initializes correctly
-  ✔ 2. Valid commitment can be submitted
-  ✔ 3. A bidder cannot submit twice
-  ✔ 4. Bids cannot be submitted after the auction closes
-  ✔ 5. A valid reveal is accepted
-  ✔ 6. An invalid reveal is rejected
-  ✔ 7. A bidder who never committed cannot reveal
-  ✔ 8. The same bid cannot be revealed twice
-  ✔ 9. Highest valid bid is selected
-  ✔ 10. No-bid auction is handled correctly
-  ✔ 11. Winner cannot be determined before the reveal phase ends
-  ✔ 12. Auction cannot be finalized twice
-✔ Sealed-Bid Auction Compact Contract Test Suite
+  ✔ 1. Auction initializes correctly (50.903053ms)
+  ✔ 2. Valid commitment can be submitted (29.879966ms)
+  ✔ 3. A bidder cannot submit twice (22.58764ms)
+  ✔ 4. Bids cannot be submitted after the auction closes (23.889679ms)
+  ✔ 5. A valid reveal is accepted (32.23166ms)
+  ✔ 6. An invalid reveal is rejected (27.204695ms)
+  ✔ 7. A bidder who never committed cannot reveal (22.385243ms)
+  ✔ 8. The same bid cannot be revealed twice (28.368399ms)
+  ✔ 9. Highest valid bid is selected (61.041043ms)
+  ✔ 10. No-bid auction is handled correctly (27.804731ms)
+  ✔ 11. Winner cannot be determined before the reveal phase ends (30.428715ms)
+  ✔ 12. Auction cannot be finalized twice (38.104483ms)
+✔ Sealed-Bid Auction Compact Contract Test Suite (396.16365ms)
 
 ℹ tests 12
 ℹ suites 1
 ℹ pass 12
 ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 495.242095
 ```
 
 ### Deployed Contract Details
