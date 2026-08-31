@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { InitialAPI, ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 
 export interface WalletState {
@@ -50,16 +50,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const walletProviders = window.midnight ? Object.values(window.midnight) : [];
 
       if (walletProviders.length > 0) {
-        // 2. Select Lace wallet provider or default to first available
+        // Select Lace wallet provider or default to first available
         const laceProvider =
           walletProviders.find(
             (w) => w.name?.toLowerCase().includes('lace') || w.rdns?.toLowerCase().includes('lace')
           ) || walletProviders[0];
 
-        // 3. Request connection to Midnight Preprod network
+        // Request connection to Midnight Preprod network
         const connectedApi = await laceProvider.connect('preprod');
 
-        // 4. Retrieve real shielded account address and DUST balance
+        // Retrieve real shielded account address and DUST balance
         const addresses = await connectedApi.getShieldedAddresses();
         let formattedBalance = '1,250.00 DUST';
 
@@ -71,6 +71,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           console.warn('Could not fetch balance from wallet API:', e);
         }
 
+        localStorage.setItem('midnight_wallet_auto_connect', 'true');
         setState({
           connected: true,
           address: addresses.shieldedAddress,
@@ -83,9 +84,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         });
       } else {
         // Fallback: If Lace browser extension is not installed, enable Simulated Midnight Wallet Mode
-        // This allows seamless testing and evaluation without requiring the extension
-        await new Promise((res) => setTimeout(res, 600)); // Smooth UX transition delay
+        await new Promise((res) => setTimeout(res, 400));
 
+        localStorage.setItem('midnight_wallet_auto_connect', 'true');
         setState({
           connected: true,
           address: 'mn_shielded1q8x90ac729fd834190c66fe853e4b09d2a4a2b',
@@ -98,8 +99,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (err: any) {
-      console.warn('Real wallet connection failed, falling back to simulation:', err);
-      // Even if extension connection fails, connect in simulation mode so the user can interact
+      console.warn('Real wallet connection failed, connecting in simulation mode:', err);
+      localStorage.setItem('midnight_wallet_auto_connect', 'true');
       setState({
         connected: true,
         address: 'mn_shielded1q8x90ac729fd834190c66fe853e4b09d2a4a2b',
@@ -114,6 +115,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const disconnect = useCallback(() => {
+    localStorage.removeItem('midnight_wallet_auto_connect');
     setState({
       connected: false,
       address: null,
@@ -125,6 +127,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       isSimulated: false,
     });
   }, []);
+
+  // Auto reconnect on page refresh if previously connected
+  useEffect(() => {
+    const auto = localStorage.getItem('midnight_wallet_auto_connect');
+    if (auto === 'true') {
+      connect();
+    }
+  }, [connect]);
 
   return (
     <WalletContext.Provider value={{ ...state, connect, disconnect, clearError }}>

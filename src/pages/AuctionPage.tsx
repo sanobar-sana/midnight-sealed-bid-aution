@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Lock,
@@ -29,6 +30,8 @@ export default function AuctionPage() {
     selectAuction,
     submitBid,
     closeAuction,
+    determineWinner,
+    finalizeAuction,
     computeCommitmentHash,
     loading,
     txHash,
@@ -451,31 +454,59 @@ export default function AuctionPage() {
                     <div className="p-6 sm:p-8 flex flex-col gap-5">
                       <div className="text-xs sm:text-sm text-white/60 mb-2">Control the phased execution of the auction smart contract.</div>
                       
-                      <div className="flex justify-between items-center p-5 rounded-2xl bg-black/60 border border-white/10">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
                         <div>
                           <div className="font-bold text-sm text-white">Phase 1: Close Bidding</div>
-                          <div className="text-xs text-white/50 mt-0.5">Locks new commitments and opens reveal phase.</div>
+                          <div className="text-xs text-white/50 mt-0.5">Locks new commitments and transitions auction to reveal phase.</div>
                         </div>
                         <button
                           onClick={closeAuction}
                           disabled={selectedAuction.phase !== 'bidding' || loading}
-                          className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition cursor-pointer disabled:opacity-40"
+                          className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
                         >
                           Close Bidding
                         </button>
                       </div>
 
-                      <div className="flex justify-between items-center p-5 rounded-2xl bg-black/60 border border-white/10">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
                         <div>
-                          <div className="font-bold text-sm text-white">Phase 2: Open Reveal</div>
-                          <div className="text-xs text-white/50 mt-0.5">Bidders verify their bids on-chain.</div>
+                          <div className="font-bold text-sm text-white">Phase 2: Open Reveal & Verify</div>
+                          <div className="text-xs text-white/50 mt-0.5">Navigate to reveal page to verify bids on-chain.</div>
                         </div>
-                        <a
-                          href="/reveal"
-                          className="px-5 py-2.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 text-xs font-bold transition"
+                        <Link
+                          to="/reveal"
+                          className="px-5 py-2.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 text-xs font-bold transition shrink-0"
                         >
-                          Go to Reveal
-                        </a>
+                          Go to Reveal Page
+                        </Link>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
+                        <div>
+                          <div className="font-bold text-sm text-white">Phase 3: Determine Winner</div>
+                          <div className="text-xs text-white/50 mt-0.5">Evaluates revealed bids and sets highest valid bidder.</div>
+                        </div>
+                        <button
+                          onClick={determineWinner}
+                          disabled={loading}
+                          className="px-5 py-2.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
+                        >
+                          Determine Winner
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
+                        <div>
+                          <div className="font-bold text-sm text-white">Phase 4: Finalize Auction</div>
+                          <div className="text-xs text-white/50 mt-0.5">Locks final result permanently into on-chain ledger.</div>
+                        </div>
+                        <button
+                          onClick={finalizeAuction}
+                          disabled={selectedAuction.phase === 'finalized' || loading}
+                          className="px-5 py-2.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
+                        >
+                          Finalize Auction
+                        </button>
                       </div>
                     </div>
                   )}
