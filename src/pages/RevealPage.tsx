@@ -14,6 +14,7 @@ import {
   Zap,
   Check,
   ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAuction } from '../context/AuctionContext';
@@ -27,12 +28,15 @@ export default function RevealPage() {
     selectedAuction,
     selectAuction,
     revealBid,
+    closeReveal,
     determineWinner,
     finalizeAuction,
+    refreshAuctionState,
     loading,
     txHash,
     error,
     clearError,
+    indexerSyncing,
   } = useAuction();
 
   const [amount, setAmount] = useState(selectedAuction.userBidAmount ? String(selectedAuction.userBidAmount) : '');
@@ -64,7 +68,7 @@ export default function RevealPage() {
               <Sparkles className="w-4.5 h-4.5 text-cyan-400" />
               <span>Select Auction to Reveal:</span>
             </div>
-            <div className="flex flex-wrap gap-2.5 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
@@ -91,6 +95,19 @@ export default function RevealPage() {
                   </button>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={refreshAuctionState}
+                disabled={indexerSyncing}
+                title="Sync on-chain state from Midnight GraphQL Indexer"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-cyan-300 font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${indexerSyncing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span className="hidden sm:inline">
+                  {indexerSyncing ? 'Syncing...' : 'Sync Indexer'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -328,18 +345,25 @@ export default function RevealPage() {
                   <span>Phase Transition Actions</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={closeReveal}
+                    disabled={selectedAuction.phase !== 'reveal' || loading}
+                    className="p-3.5 rounded-full bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 text-xs font-bold transition cursor-pointer disabled:opacity-40"
+                  >
+                    Close Reveal
+                  </button>
                   <button
                     onClick={determineWinner}
                     disabled={loading}
-                    className="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
+                    className="p-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Determine Winner
                   </button>
                   <button
                     onClick={finalizeAuction}
                     disabled={selectedAuction.phase === 'finalized' || loading}
-                    className="p-4 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
+                    className="p-3.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Finalize Auction
                   </button>

@@ -260,7 +260,7 @@ export default function HomePage() {
               <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white text-black text-xs font-bold shadow-md">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <span>Interactive Proof Simulator</span>
+                  <span>Interactive ZK Proof Engine</span>
                 </div>
               </div>
 
@@ -302,7 +302,7 @@ export default function HomePage() {
 
                 <div className="flex flex-col gap-5">
                   <div>
-                    <label className="text-xs text-white/70 font-semibold mb-2 block">Simulated Bid Amount (DUST)</label>
+                    <label className="text-xs text-white/70 font-semibold mb-2 block">Witness Bid Amount (DUST)</label>
                     <input
                       type="number"
                       value={mockAmount}
@@ -321,10 +321,14 @@ export default function HomePage() {
                         className="w-full liquid-input font-mono text-xs"
                       />
                       <button
-                        onClick={() => setMockSalt(Math.random().toString(36).substring(2, 12))}
+                        onClick={() => {
+                          const arr = new Uint8Array(16);
+                          crypto.getRandomValues(arr);
+                          setMockSalt(Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join(''));
+                        }}
                         className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition shrink-0 cursor-pointer"
                       >
-                        Random
+                        Generate Salt
                       </button>
                     </div>
                   </div>

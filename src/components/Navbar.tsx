@@ -25,7 +25,7 @@ const navLinks = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [walletDrop, setWalletDrop] = useState(false);
-  const { connected, address, balance, connect, disconnect, connecting, isSimulated } = useWallet();
+  const { connected, address, balance, connect, disconnect, connecting } = useWallet();
   const location = useLocation();
   const dropRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +120,7 @@ export default function Navbar() {
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400" />
                         <span className="text-xs font-bold text-emerald-400">
-                          {isSimulated ? 'Lace Wallet (Demo)' : 'Lace Wallet'}
+                          Midnight Lace Wallet
                         </span>
                       </div>
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-white/40">Midnight Testnet</span>

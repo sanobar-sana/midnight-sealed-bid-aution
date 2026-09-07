@@ -31,13 +31,17 @@ export default function AuctionPage() {
     selectAuction,
     submitBid,
     closeAuction,
+    closeReveal,
     determineWinner,
     finalizeAuction,
+    refreshAuctionState,
     computeCommitmentHash,
     loading,
     txHash,
     error,
     clearError,
+    indexerSyncing,
+    lastSyncTime,
   } = useAuction();
 
   const [activeTab, setActiveTab] = useState<'bid' | 'ledger' | 'admin'>('bid');
@@ -104,9 +108,9 @@ export default function AuctionPage() {
           <div className="p-4 sm:p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-white/80">
               <Sparkles className="w-4.5 h-4.5 text-cyan-400" />
-              <span>Select Active Auction:</span>
+              <span>Active Auction:</span>
             </div>
-            <div className="flex flex-wrap gap-2.5 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
@@ -129,6 +133,20 @@ export default function AuctionPage() {
                   </button>
                 );
               })}
+
+              {/* Live Indexer Sync Button */}
+              <button
+                type="button"
+                onClick={refreshAuctionState}
+                disabled={indexerSyncing}
+                title="Sync on-chain state from Midnight GraphQL Indexer"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-cyan-300 font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${indexerSyncing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span className="hidden sm:inline">
+                  {indexerSyncing ? 'Syncing...' : lastSyncTime ? `Synced` : 'Sync Indexer'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -498,7 +516,21 @@ export default function AuctionPage() {
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
                         <div>
-                          <div className="font-bold text-sm text-white">Phase 3: Determine Winner</div>
+                          <div className="font-bold text-sm text-white">Phase 3: Close Reveal Phase</div>
+                          <div className="text-xs text-white/50 mt-0.5">Locks reveals on-chain before determining the winner.</div>
+                        </div>
+                        <button
+                          onClick={closeReveal}
+                          disabled={selectedAuction.phase !== 'reveal' || loading}
+                          className="px-5 py-2.5 rounded-full bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
+                        >
+                          Close Reveal
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
+                        <div>
+                          <div className="font-bold text-sm text-white">Phase 4: Determine Winner</div>
                           <div className="text-xs text-white/50 mt-0.5">Evaluates revealed bids and sets highest valid bidder.</div>
                         </div>
                         <button
@@ -512,7 +544,7 @@ export default function AuctionPage() {
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 rounded-2xl bg-black/60 border border-white/10">
                         <div>
-                          <div className="font-bold text-sm text-white">Phase 4: Finalize Auction</div>
+                          <div className="font-bold text-sm text-white">Phase 5: Finalize Auction</div>
                           <div className="text-xs text-white/50 mt-0.5">Locks final result permanently into on-chain ledger.</div>
                         </div>
                         <button

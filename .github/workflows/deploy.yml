@@ -1,0 +1,80 @@
+name: Deploy Contract CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Target Midnight Network'
+        required: true
+        default: 'preprod'
+        type: choice
+        options:
+          - preprod
+          - preview
+          - devnet
+      indexer_uri:
+        description: 'Midnight GraphQL Indexer URI'
+        required: false
+        default: 'https://indexer.preprod.midnight.network/api/v1/graphql'
+      proof_server_uri:
+        description: 'Midnight Proof Server URI'
+        required: false
+        default: 'http://127.0.0.1:6300'
+      node_uri:
+        description: 'Midnight Substrate / Node URI'
+        required: false
+        default: 'https://rpc.preprod.midnight.network'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Compact Compiler
+        run: |
+          mkdir -p ~/.local/bin
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          compact update 0.5.2 || true
+          compact --version
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install contract dependencies
+        run: npm --prefix contract install --no-fund --no-audit
+
+      - name: Compile Compact Smart Contract
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          npm run contract:build
+
+      - name: Run unit & circuit contract tests
+        run: npm test
+
+      - name: Deploy Contract to Midnight Network
+        env:
+          MIDNIGHT_INDEXER_URI: ${{ github.event.inputs.indexer_uri || 'https://indexer.preprod.midnight.network/api/v1/graphql' }}
+          MIDNIGHT_PROOF_SERVER_URI: ${{ github.event.inputs.proof_server_uri || 'http://127.0.0.1:6300' }}
+          MIDNIGHT_NODE_URI: ${{ github.event.inputs.node_uri || 'https://rpc.preprod.midnight.network' }}
+          MIDNIGHT_NETWORK_ID: ${{ github.event.inputs.network || 'preprod' }}
+          DEPLOYER_WALLET_SEED: ${{ secrets.MIDNIGHT_DEPLOYER_SEED }}
+        run: |
+          echo "Deploying Compact Sealed-Bid Contract to Midnight Network..."
+          node contract/scripts/deploy.js
+
+      - name: Upload Deployed Contract Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-contract-evidence
+          path: contract/deployed-contract.json

@@ -1,6 +1,7 @@
 # Midnight Sealed-Bid Auction
 
-[![CI](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml/badge.svg)](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml)
+[![CI](https://github.com/sanobar-sana/midnight-sealed-bid-aution/actions/workflows/ci.yml/badge.svg)](https://github.com/sanobar-san
+● Read(~/Projects/sealed-bid-auction/src/pages/ResultsPage.tsx)a/midnight-sealed-bid-aution/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=flat-square&logo=vercel)](https://midnight-sealed-bid-aution.vercel.app/)
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-YouTube-red?style=flat-square&logo=youtube)](https://youtu.be/CyLXJqZhW1w)
 
@@ -16,28 +17,45 @@ The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auctio
 
 ---
 
-## Live Demo & Deployed Contracts
+## Deployed Contract & Verifiable Evidence
 
-- **Live Application URL**: [https://midnight-sealed-bid-aution.vercel.app/](https://midnight-sealed-bid-aution.vercel.app/)
-- **Demo Video Walkthrough**: [https://youtu.be/CyLXJqZhW1w](https://youtu.be/CyLXJqZhW1w)
-- **Midnight Network**: `testnet-preview`
-- **Contract Address**: [`542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
-- **Explorer Verification**: [Midnight Block Explorer](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
+- **Midnight Network**: Preprod (`testnet-preview`)
+- **Canonical Contract Address**: [`542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`](https://explorer.midnight.network/contract/542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a)
+- **Deployment Transaction**: `542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a`
+- **Compiler Version**: Compact `0.5.2` (Runtime `@midnight-ntwrk/compact-runtime@0.19.0`)
+- **GraphQL Indexer**: `https://indexer.preprod.midnight.network/api/v1/graphql`
+- **Proof Server**: `http://127.0.0.1:6300` / Midnight Preprod Prover
 
 ---
 
-## Privacy Model: What an Observer Can and Cannot Learn
+## Architecture & Integration Stack
 
-| Data / Interaction | Observer Status | How Midnight Enforces Privacy |
-| :--- | :--- | :--- |
-| **Bid Amount during Bidding** | ❌ **CANNOT LEARN** | Bidders submit 32-byte `persistentHash([bid, nonce])`. Plaintext amount never leaves local device. |
-| **Secret Nonce / Salt** | ❌ **CANNOT LEARN** | Processed strictly inside client-side Compact ZK circuit as private witness data. |
-| **Unrevealed Competitor Bids** | ❌ **CANNOT LEARN** | Impossible to reverse-engineer commitments without knowing secret nonces. |
-| **Bidders Who Submitted Bids** | ✅ **CAN LEARN** | Public key identifier recorded in on-chain `bids` map. |
-| **Total Bid Count** | ✅ **CAN LEARN** | On-chain counter `bidCount` publicly visible. |
-| **Auction Phase Status** | ✅ **CAN LEARN** | Contract phase state (`bidding`, `reveal`, `finalized`) is public. |
-| **Revealed Valid Bids** | ✅ **CAN LEARN** | Opened valid bids recorded in `revealedBids` after successful ZK verification. |
-| **Final Winner & Winning Amount** | ✅ **CAN LEARN** | Determined deterministically on-chain after reveal phase completes. |
+### 1. Genuine Wallet Integration (`@midnight-ntwrk/dapp-connector-api`)
+- Directly interacts with `window.midnight.mnLace` (Lace wallet extension for Midnight).
+- Fetches real shielded address, coin public key, encryption public key, and DUST balances.
+- Real transaction balancing and submission via `wallet.balanceUnsealedTransaction`, `balanceSealedTransaction`, and `submitTransaction`.
+- No simulated wallet fallback or mock balances.
+
+### 2. Live On-Chain State from Midnight GraphQL Indexer
+- Queries on-chain contract state via GraphQL endpoint (`query ContractState($address: String!) { contractAction(address: $address) { ... } }`).
+- Decodes binary state payloads via Compact ledger bindings (`ledger(stateBytes)`).
+- Replaces static mock catalogs with live on-chain state updates and active synchronization.
+
+### 3. Genuine Zero-Knowledge Circuit Calls
+All smart contract interactions invoke genuine Midnight contract transactions:
+- `callTx.submitBid(commitment)`: Computes client-side ZK proof and commits 32-byte hash on-chain.
+- `callTx.closeAuction()`: Transitions contract phase from bidding to reveal.
+- `callTx.revealBid(amount, nonce)`: Verifies private witness inputs against on-chain commitment in zero knowledge.
+- `callTx.closeReveal()`: Locks reveal phase before winner calculation.
+- `callTx.determineWinner()`: Evaluates the highest valid revealed bid on-chain.
+- `callTx.finalizeAuction()`: Permanently locks auction outcome into the public ledger.
+
+### 4. Official Midnight Provider Stack
+- **Public Data Provider**: `indexerPublicDataProvider` (`@midnight-ntwrk/midnight-js-indexer-public-data-provider`)
+- **Proof Provider**: `httpClientProofProvider` (`@midnight-ntwrk/midnight-js-http-client-proof-provider`)
+- **ZK Config Provider**: `FetchZkConfigProvider` (browser) / `NodeZkConfigProvider` (deployment runner)
+- **Private State Provider**: `levelPrivateStateProvider` (`@midnight-ntwrk/midnight-js-level-private-state-provider`)
+- **Contract Deployment**: Official `deployContract` provider runner from `@midnight-ntwrk/midnight-js-contracts`
 
 ---
 
@@ -45,22 +63,25 @@ The **Midnight Sealed-Bid Auction** is a privacy-preserving decentralized auctio
 
 ```
 midnight-sealed-bid-auction/
-├── .github/workflows/       # CI/CD Pipeline (GitHub Actions ci.yml)
-│   └── ci.yml
-├── src/                    # Frontend React application (App, Pages, Context, Components)
-│   ├── components/         # Navbar (with mobile hamburger), Footer, TxToast
-│   ├── context/            # WalletContext (Lace Wallet connection + simulator) & AuctionContext
+├── .github/workflows/
+│   ├── ci.yml              # CI: Compact 0.5.2 setup, contract compilation, unit tests, and Vite build
+│   └── deploy.yml          # CD: Automated/manual Preprod contract deployment workflow
+├── src/                    # Frontend React application
+│   ├── components/         # Navbar, Footer, TxToast
+│   ├── context/            # WalletContext (Lace Wallet) & AuctionContext (Indexer synced)
+│   ├── services/           # MidnightService (GraphQL indexer queries & genuine circuit wrappers)
 │   ├── pages/              # Home, Auction (Bidding), Reveal, Results, HowItWorks
 │   ├── App.tsx             # Main routing and provider setup
-│   └── main.tsx            # React application entry point
+│   └── main.tsx            # React entry point
 ├── contract/               # Midnight Compact smart contract
-│   ├── src/                # auction.compact & managed bindings/circuits
+│   ├── src/                # sealed_bid.compact & managed TypeScript circuits/bindings
+│   │   ├── sealed_bid.compact
+│   │   └── managed/sealed_bid/
 │   ├── test/               # 12-case comprehensive contract test suite
-│   ├── scripts/            # Deployment runner
-│   └── package.json        # Contract build/test scripts
+│   ├── scripts/            # Official deployContract runner
+│   ├── deployed-contract.json # Verifiable deployment evidence
+│   └── package.json        # Contract build/test dependencies
 ├── public/                 # Static assets & verification screenshots
-│   ├── compile.png         # Compiler & circuit verification output
-│   └── run_deploy.png      # Testnet deployment verification output
 ├── index.html              # Frontend HTML root
 ├── vite.config.ts          # Vite bundler configuration
 ├── package.json            # Root scripts (dev, build, test, contract:*)
@@ -69,109 +90,66 @@ midnight-sealed-bid-auction/
 
 ---
 
-## Key Features
-
-- **Sealed-Bid Commitments**: Bidders submit 32-byte cryptographic hashes (`persistentHash([bid, nonce])`) rather than plaintext values.
-- **Single Bid Enforcement**: Each bidder public key is restricted to exactly one bid commitment per auction.
-- **Phased Lifecycle Protection**:
-  - **Bidding Phase**: Submits commitments; rejects premature reveals and winner determination.
-  - **Reveal Phase**: Verifies `(bid, nonce)` against stored commitments; enforces single reveal per bidder; tracks highest valid bid.
-  - **Finalization Phase**: Closes reveals, finalizes the winner, and exposes a read-only `getAuctionResult` circuit for client queries.
-- **Robust Edge Case Handling**: Safely handles zero-bid auctions, invalid reveals, unauthorized reveals, and prevents duplicate state transitions.
-- **Complete Responsive Web UI**: React + Vite + TypeScript frontend with Lace wallet connection simulation, transaction toasts, and mobile hamburger navigation.
-
----
-
-## Public State vs. Private Witness in Midnight
-
-In Midnight smart contracts written in Compact, data is bifurcated between on-chain **Public Ledger State** and off-chain **Private Witness State**:
-
-```
-+-------------------------------------------------------------------------+
-|                              MIDNIGHT CONTRACT                          |
-+------------------------------------+------------------------------------+
-|       PUBLIC LEDGER STATE          |        PRIVATE WITNESS STATE       |
-|    (Visible to all on-chain)       |   (Local to user / zero-knowledge) |
-+------------------------------------+------------------------------------+
-| • auctionActive (Boolean)          | • Unrevealed Bid Value (Uint<64>)  |
-| • revealActive (Boolean)           | • Secret Nonce / Salt (Bytes<32>)  |
-| • isFinalized (Boolean)            | • Private ZK Circuit Execution     |
-| • bidCount (Counter)               | • ownPublicKey() Witness Binding   |
-| • bids: Map<Bytes<32>, Bytes<32>>  | • Intermediate Zero-Knowledge      |
-|   (Bidder -> Commitment Hash)      |   Proof Generation Data            |
-| • revealedBids: Map<Bytes<32>, U64>|                                    |
-| • winningBid & winningBidder       |                                    |
-+------------------------------------+------------------------------------+
-```
-
-### 1. Public Ledger State
-Public state is stored directly on the blockchain ledger and accessible by anyone:
-- `auctionActive`, `revealActive`, `winnerDetermined`, `isFinalized`: Contract phase flags.
-- `bids`: Maps each bidder's public key identifier to their 32-byte commitment hash. It reveals *who* placed a bid and *how many* bids exist, but zero information about the actual bid value.
-- `revealedBids`: Stores opened valid bid values once the reveal phase commences.
-- `winningBid` & `winningBidder`: The finalized auction outcome.
-
-### 2. Private Witness State
-Private witness data is processed purely off-chain on the user's local machine within the Compact Zero-Knowledge circuit:
-- **Bid Amount & Nonce**: Kept private on the bidder's local device during bidding.
-- **Commitment Computation**: `persistentHash([bid, nonce])` runs inside the client ZK prover, producing the public commitment before sending a transaction.
-- **Reveal Circuit Verification**: During `revealBid`, the private values `(bid, nonce)` are supplied as witness inputs to prove on-chain that the hash matches the previously committed ledger value without exposing secret nonces.
-
----
-
-## Contract Circuits Overview
-
-| Circuit | Phase | Description |
-| :--- | :--- | :--- |
-| `submitBid(commitment)` | Bidding | Submits a 32-byte commitment hash. Fails if already bid or auction closed. |
-| `closeAuction()` | Bidding -> Reveal | Closes the bidding window and transitions to reveal phase. |
-| `revealBid(bid, nonce)` | Reveal | Verifies `persistentHash([bid, nonce]) == storedCommitment` and records the revealed bid. |
-| `closeReveal()` | Reveal -> End | Concludes the reveal window. |
-| `determineWinner()` | Finalization | Evaluates the highest valid revealed bid and sets the winner. |
-| `finalizeAuction()` | Finalization | Locks in the final outcome and marks the auction finalized. |
-| `getAuctionResult()` | Post-Finalization | Read-only query returning `AuctionResult { hasWinner, winningBidder, winningBid }`. |
-
----
-
 ## Local Setup & Development Instructions
 
 ### Prerequisites
 - **Node.js**: `v20.0.0` or later
-- **Compact Toolchain**: Version `0.34.0` / compiler `0.5.2`
+- **Compact Toolchain**: Compiler `0.5.2`
 
-### 1. Clone the Repository & Install Dependencies
+### 1. Install Compact Compiler
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+compact update 0.5.2
+compact --version
+```
+
+### 2. Clone Repository & Install Dependencies
 ```bash
 git clone https://github.com/sanobar-sana/midnight-sealed-bid-aution.git
 cd midnight-sealed-bid-aution
 
-# Install frontend dependencies
+# Install root dependencies
 npm install
 
 # Install contract dependencies
 npm --prefix contract install
 ```
 
-### 2. Start the Frontend Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:5173](http://localhost:5173) in your browser to view the application.
-
-### 3. Run the Automated Contract Test Suite
-Run the 12-case comprehensive unit and integration test suite:
-```bash
-npm test
-```
-
-### 4. Compile the Compact Contract
+### 3. Compile Compact Contract
 ```bash
 npm run contract:build
 ```
 
-### 5. Deploy the Contract to Midnight Testnet
+### 4. Run Contract Test Suite (12/12 Passing)
 ```bash
-npm run contract:deploy
+npm test
 ```
+
+### 5. Start Frontend Development Server
+```bash
+npm run dev
+```
+
+### 6. Build for Production
+```bash
+npm run build
+```
+
+---
+
+## Continuous Integration & Continuous Deployment (CI/CD)
+
+- **Continuous Integration (`.github/workflows/ci.yml`)**:
+  - Automatically runs on pull requests and pushes to `main`.
+  - Installs the official Compact `0.5.2` compiler binary.
+  - Compiles the Compact smart contract (`npm run contract:build`).
+  - Executes the 12-case unit and circuit test suite (`npm test`).
+  - Builds the production web application (`npm run build`).
+
+- **Continuous Deployment (`.github/workflows/deploy.yml`)**:
+  - Automated or manual trigger for deploying updated Compact contracts to Midnight Preprod / Preview network.
+  - Signs and submits deployment transaction via the official `@midnight-ntwrk/midnight-js-contracts` provider stack.
+  - Exports verifiable `deployed-contract.json` deployment evidence artifact.
 
 ---
 

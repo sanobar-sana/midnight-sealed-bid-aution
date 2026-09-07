@@ -1,13 +1,28 @@
 {
-  "network": "testnet-preview",
-  "contractAddress": "64cbb170863d74f8039973eb46ae0f417478ac5d743db3d0033ede110a95b2e1",
+  "network": "preprod",
+  "contractAddress": "542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a",
   "deployerPublicKey": "0000000000000000000000000000000000000000000000000000000000000001",
   "deployedAt": "2026-08-30T16:14:02.609Z",
   "status": "deployed",
+  "txHash": "0a12f689bc4410e39540b615b149b5c32857099710faef05118749a909403ef8",
+  "blockHeight": 184205,
+  "blockHash": "4e912ab7365c190f84a13e6170d24c3295efb417246b9a89d7134015f8a02c34",
+  "circuits": [
+    "submitBid",
+    "closeAuction",
+    "revealBid",
+    "closeReveal",
+    "determineWinner",
+    "finalizeAuction",
+    "getAuctionResult"
+  ],
+  "compiler": "compact 0.5.2",
   "initialState": {
     "auctionActive": true,
     "revealActive": true,
+    "winnerDetermined": false,
     "isFinalized": false,
-    "bidCount": "0"
+    "bidCount": "0",
+    "hasWinner": false
   }
 }

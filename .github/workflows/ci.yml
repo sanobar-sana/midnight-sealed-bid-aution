@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   validate:
@@ -19,11 +20,25 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Install Compact Compiler
+        run: |
+          mkdir -p ~/.local/bin
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          compact update 0.5.2 || true
+          compact --version
+
       - name: Install root dependencies
         run: npm ci
 
       - name: Install contract dependencies
         run: npm --prefix contract install --no-fund --no-audit
+
+      - name: Compile Compact Smart Contract
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          npm run contract:build
 
       - name: Run contract tests
         run: npm test

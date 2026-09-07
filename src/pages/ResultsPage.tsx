@@ -10,11 +10,12 @@ import {
   Sparkles,
   Database,
   Search,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext';
 
 export default function ResultsPage() {
-  const { auctions, selectedAuctionId, selectedAuction, selectAuction } = useAuction();
+  const { auctions, selectedAuctionId, selectedAuction, selectAuction, refreshAuctionState, indexerSyncing, lastSyncTime } = useAuction();
   const [copiedWinner, setCopiedWinner] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -39,12 +40,12 @@ export default function ResultsPage() {
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           
           {/* Active Auction Selector Strip */}
-          <div className="p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center gap-4">
+          <div className="p-5 rounded-3xl liquid-glass mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-xs font-bold text-white/70">
               <Sparkles className="w-4 h-4 text-cyan-400" />
               <span>Select Auction:</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {auctions.map((a) => {
                 const isSelected = a.id === selectedAuctionId;
                 return (
@@ -67,6 +68,20 @@ export default function ResultsPage() {
                   </button>
                 );
               })}
+
+              {/* Live Indexer Sync Button */}
+              <button
+                type="button"
+                onClick={refreshAuctionState}
+                disabled={indexerSyncing}
+                title="Sync on-chain state from Midnight GraphQL Indexer"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-cyan-300 font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${indexerSyncing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span className="hidden sm:inline">
+                  {indexerSyncing ? 'Syncing...' : lastSyncTime ? 'Synced' : 'Sync Indexer'}
+                </span>
+              </button>
             </div>
           </div>
 
