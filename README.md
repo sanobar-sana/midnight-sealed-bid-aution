@@ -26,7 +26,7 @@ npm install
 npm run dev
 ```
 
-Copy `.env.example` to `.env` and set `MONGODB_URI`; `.env` is ignored by git. Run `npm run dev:vercel` to use Vercel Dev, including the MongoDB-backed `/api` functions. `npm run dev` starts Vite only. For Vercel deployment, add `MONGODB_URI` and `MONGODB_DB` in the Vercel project Environment Variables for Preview and Production. The MongoDB API only stores wallet login sessions and confirmed transaction references; the Midnight contract remains authoritative for auctions. Never put MongoDB credentials in `VITE_` variables or client code.
+Run `npm run dev:vercel` to use Vercel Dev, including the MongoDB-backed `/api` functions. `npm run dev` starts Vite only. MongoDB requests are handled by server code; the API stores wallet login sessions and confirmed transaction references, while the Midnight contract remains authoritative for auctions.
 
 The `predev` and `prebuild` hooks compile the Compact contract with ZK artifacts and copy its proving keys, verifier keys, and ZKIR into the Vite public directory. To compile these artifacts directly:
 

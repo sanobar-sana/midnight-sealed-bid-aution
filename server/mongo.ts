@@ -1,12 +1,13 @@
 import { MongoClient, type Db } from 'mongodb';
 
+const MONGODB_URI = "mongodb+srv://sanasanobar83_db_user:SehF27vIYX3K9aZP@cluster0.aerqw7d.mongodb.net/?appName=Cluster0";
+
 type MongoCache = { client: MongoClient; db: Db; indexesReady: Promise<void> };
 declare global { var midnightBidMongo: Promise<MongoCache> | undefined }
 
 export async function getMongo() {
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is not configured for this Vercel function.');
   globalThis.midnightBidMongo ??= (async () => {
-    const client = new MongoClient(process.env.MONGODB_URI!, { serverSelectionTimeoutMS: 8_000, maxPoolSize: 10 });
+    const client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 8_000, maxPoolSize: 10 });
     await client.connect();
     const db = client.db(process.env.MONGODB_DB || 'midnight_bid');
     const indexesReady = (async () => {
