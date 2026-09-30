@@ -57,7 +57,7 @@ describe('Sealed-Bid Auction Compact Contract Test Suite', () => {
     const l = harness.getLedger();
 
     assert.equal(l.auctionActive, true);
-    assert.equal(l.revealActive, true);
+    assert.equal(l.revealActive, false);
     assert.equal(l.winnerDetermined, false);
     assert.equal(l.isFinalized, false);
     assert.equal(l.hasWinner, false);

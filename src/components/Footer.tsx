@@ -72,7 +72,7 @@ export default function Footer() {
               <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Network Status</span>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full liquid-glass border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Testnet Preview</span>
+                <span>Midnight Preprod</span>
               </div>
             </div>
 
@@ -89,7 +89,7 @@ export default function Footer() {
         {/* Small Legal Line Above Big Wordmark */}
         <div className="pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40 border-b border-white/5 w-full">
           <div>© 2026 MidnightBid · Zero-Knowledge Sealed-Bid Protocol</div>
-          <div className="font-mono text-[11px]">Contract: 542035fc...27140a</div>
+          <div className="font-mono text-[11px]">Midnight Preprod</div>
         </div>
 
       </div>

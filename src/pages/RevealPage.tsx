@@ -27,10 +27,12 @@ export default function RevealPage() {
     selectedAuction,
     selectAuction,
     revealBid,
+    closeReveal,
     determineWinner,
     finalizeAuction,
     loading,
     txHash,
+    txStatus,
     error,
     clearError,
   } = useAuction();
@@ -53,7 +55,7 @@ export default function RevealPage() {
 
   return (
     <div className="pt-28 pb-20 min-h-screen w-full max-w-full overflow-x-hidden">
-      <TxToast loading={loading} txHash={txHash} error={error} onClose={clearError} />
+      <TxToast loading={loading} txHash={txHash} txStatus={txStatus} error={error} onClose={clearError} />
 
       <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -85,7 +87,7 @@ export default function RevealPage() {
                     <div className="text-left">
                       <div className="text-xs font-bold leading-tight">{a.title}</div>
                       <div className="text-[10px] opacity-70 font-normal mt-0.5">
-                        {a.phase === 'bidding' ? '🟢 Bidding' : a.phase === 'reveal' ? '🔵 Reveal Phase' : '✅ Finalized'}
+                        {a.phase === 'bidding' ? '🟢 Bidding' : a.phase === 'reveal' ? '🔵 Reveal Phase' : a.phase === 'settlement' ? '🟣 Settlement' : '✅ Finalized'}
                       </div>
                     </div>
                   </button>
@@ -98,8 +100,8 @@ export default function RevealPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 rounded-3xl liquid-glass mb-8">
             {[
               { num: '01', title: 'Commitment Phase', desc: 'Bidding Closed', done: selectedAuction.phase !== 'bidding', active: selectedAuction.phase === 'bidding' },
-              { num: '02', title: 'Reveal Phase', desc: 'Verify On-Chain', done: selectedAuction.phase === 'finalized', active: selectedAuction.phase === 'reveal' },
-              { num: '03', title: 'Winner Determination', desc: 'Highest Bid Wins', done: selectedAuction.hasWinner, active: selectedAuction.phase === 'reveal' && selectedAuction.bids.some((b) => b.revealed) },
+              { num: '02', title: 'Reveal Phase', desc: 'Verify On-Chain', done: selectedAuction.phase === 'settlement' || selectedAuction.phase === 'finalized', active: selectedAuction.phase === 'reveal' },
+              { num: '03', title: 'Winner Determination', desc: 'Highest Bid Wins', done: selectedAuction.winnerDetermined, active: selectedAuction.phase === 'settlement' && !selectedAuction.winnerDetermined },
               { num: '04', title: 'Finalization', desc: 'Result Locked', done: selectedAuction.phase === 'finalized', active: false },
             ].map((step) => (
               <div key={step.num} className="flex items-center gap-3 p-3">
@@ -145,8 +147,8 @@ export default function RevealPage() {
                     <p className="text-xs sm:text-sm text-white/60 max-w-xs mx-auto mb-6">
                       Connect your wallet to supply your private witness to the Compact reveal circuit.
                     </p>
-                    <button onClick={connect} disabled={connecting} className="px-7 py-3.5 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl transition cursor-pointer">
-                      Connect Lace Wallet
+                    <button onClick={() => void connect()} disabled={connecting} className="px-7 py-3.5 rounded-full bg-white text-black font-bold text-xs sm:text-sm shadow-xl transition cursor-pointer">
+                      Connect Wallet
                     </button>
                   </div>
                 ) : !selectedAuction.userHasBid ? (
@@ -330,15 +332,22 @@ export default function RevealPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
+                    onClick={closeReveal}
+                    disabled={!selectedAuction.isCreator || selectedAuction.phase !== 'reveal' || loading}
+                    className="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
+                  >
+                    Close Reveal
+                  </button>
+                  <button
                     onClick={determineWinner}
-                    disabled={loading}
+                    disabled={selectedAuction.phase !== 'settlement' || selectedAuction.winnerDetermined || loading}
                     className="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Determine Winner
                   </button>
                   <button
                     onClick={finalizeAuction}
-                    disabled={selectedAuction.phase === 'finalized' || loading}
+                    disabled={!selectedAuction.isCreator || selectedAuction.phase !== 'settlement' || !selectedAuction.winnerDetermined || loading}
                     className="p-4 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-40"
                   >
                     Finalize Auction

@@ -21,14 +21,16 @@ import {
 import { useWallet } from '../context/WalletContext';
 import { useAuction } from '../context/AuctionContext';
 import TxToast from '../components/TxToast';
+import { AUCTION_CONTRACT_ADDRESS } from '../chain/config';
 
 export default function AuctionPage() {
-  const { connected, connect, connecting } = useWallet();
+  const { connected, connect, connecting, balance } = useWallet();
   const {
     auctions,
     selectedAuctionId,
     selectedAuction,
     selectAuction,
+    createAuction,
     submitBid,
     closeAuction,
     determineWinner,
@@ -36,6 +38,7 @@ export default function AuctionPage() {
     computeCommitmentHash,
     loading,
     txHash,
+    txStatus,
     error,
     clearError,
   } = useAuction();
@@ -46,6 +49,8 @@ export default function AuctionPage() {
   const [showNonce, setShowNonce] = useState(false);
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [previewHash, setPreviewHash] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [auctionName, setAuctionName] = useState('');
 
   // Live compute preview hash using Compact persistentHash
   useEffect(() => {
@@ -54,13 +59,14 @@ export default function AuctionPage() {
       (async () => {
         try {
           const hash = await computeCommitmentHash(Number(amount), nonce);
-          if (mounted) setPreviewHash(hash);
-        } catch {
-          if (mounted) setPreviewHash(null);
+          if (mounted) { setPreviewHash(hash); setPreviewError(null); }
+        } catch (cause) {
+          if (mounted) { setPreviewHash(null); setPreviewError(cause instanceof Error ? cause.message : String(cause)); }
         }
       })();
     } else {
       setPreviewHash(null);
+      setPreviewError(null);
     }
     return () => {
       mounted = false;
@@ -68,7 +74,7 @@ export default function AuctionPage() {
   }, [amount, nonce, computeCommitmentHash]);
 
   const handleGenerateNonce = () => {
-    const arr = new Uint8Array(16);
+    const arr = new Uint8Array(32);
     crypto.getRandomValues(arr);
     const hex = Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
     setNonce(hex);
@@ -89,13 +95,18 @@ export default function AuctionPage() {
     e.preventDefault();
     if (!amount || !nonce) return;
     await submitBid(Number(amount), nonce);
-    setAmount('');
-    setNonce('');
+  };
+
+  const handleCreateAuction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auctionName.trim()) return;
+    await createAuction(auctionName);
+    setAuctionName('');
   };
 
   return (
     <div className="pt-28 pb-20 min-h-screen w-full max-w-full overflow-x-hidden">
-      <TxToast loading={loading} txHash={txHash} error={error} onClose={clearError} />
+      <TxToast loading={loading} txHash={txHash} txStatus={txStatus} error={error} onClose={clearError} />
 
       <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -123,12 +134,17 @@ export default function AuctionPage() {
                     <div className="text-left">
                       <div className="text-xs font-bold leading-tight">{a.title}</div>
                       <div className="text-[10px] opacity-70 font-normal mt-0.5">
-                        {a.phase === 'bidding' ? '🟢 Bidding' : a.phase === 'reveal' ? '🔵 Reveal' : '✅ Finalized'} · {a.bidCount} Bids
+                        {a.phase === 'bidding' ? '🟢 Bidding' : a.phase === 'reveal' ? '🔵 Reveal' : a.phase === 'settlement' ? '🟣 Settlement' : '✅ Finalized'} · {a.bidCount} Bids
                       </div>
                     </div>
                   </button>
                 );
               })}
+              {!auctions.length && <span className="text-xs text-white/50">No contract loaded</span>}
+              <form onSubmit={handleCreateAuction} className="flex items-center gap-2">
+                <input value={auctionName} onChange={(event) => setAuctionName(event.target.value)} maxLength={64} required placeholder="Auction name" disabled={!connected || loading} className="w-36 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/40 disabled:opacity-50" />
+                <button type="submit" disabled={!connected || loading || !AUCTION_CONTRACT_ADDRESS.trim()} title={!AUCTION_CONTRACT_ADDRESS.trim() ? 'The shared contract address must be configured first.' : undefined} className="rounded-xl bg-cyan-300 px-4 py-2 text-xs font-bold text-black disabled:opacity-50">Create auction</button>
+              </form>
             </div>
           </div>
 
@@ -151,10 +167,12 @@ export default function AuctionPage() {
                           ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-500/30'
                           : selectedAuction.phase === 'reveal'
                           ? 'bg-cyan-950/70 text-cyan-400 border border-cyan-500/30'
+                          : selectedAuction.phase === 'settlement'
+                          ? 'bg-violet-950/70 text-violet-300 border border-violet-500/30'
                           : 'bg-indigo-950/70 text-indigo-300 border border-indigo-500/30'
                       }`}
                     >
-                      {selectedAuction.phase === 'bidding' ? '● Bidding Open' : selectedAuction.phase === 'reveal' ? '● Reveal Active' : '✓ Auction Closed'}
+                      {selectedAuction.phase === 'bidding' ? '● Bidding Open' : selectedAuction.phase === 'reveal' ? '● Reveal Active' : selectedAuction.phase === 'settlement' ? '● Awaiting Winner' : '✓ Auction Closed'}
                     </div>
                   </div>
 
@@ -288,15 +306,15 @@ export default function AuctionPage() {
                           </div>
                           <h3 className="text-xl font-bold text-white mb-2">Connect Your Wallet</h3>
                           <p className="text-xs sm:text-sm text-white/60 max-w-sm mx-auto mb-6">
-                            Connect your Lace wallet to construct a zero-knowledge commitment proof and bid privately.
+                            Connect Lace or 1AM to generate a proof and submit a private bid.
                           </p>
                           <button
-                            onClick={connect}
+                            onClick={() => void connect()}
                             disabled={connecting}
                             className="px-7 py-3.5 rounded-full bg-white hover:bg-white/90 text-black font-bold text-xs sm:text-sm shadow-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-2 active:scale-[0.98]"
                           >
                             <Wallet className="w-4 h-4" />
-                            <span>{connecting ? 'Connecting to Lace...' : 'Connect Lace Wallet'}</span>
+                            <span>{connecting ? 'Connecting...' : 'Connect Wallet'}</span>
                           </button>
                         </div>
                       ) : selectedAuction.userHasBid ? (
@@ -343,7 +361,7 @@ export default function AuctionPage() {
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-center text-xs sm:text-sm">
                               <label className="font-bold text-white">Bid Amount (DUST)</label>
-                              <span className="text-white/50">Balance: 1,250.00 DUST</span>
+                              <span className="text-white/50">Balance: {balance ?? 'Connect wallet to view'}</span>
                             </div>
                             <div className="relative flex items-center">
                               <input
@@ -390,7 +408,7 @@ export default function AuctionPage() {
                                 type={showNonce ? 'text' : 'password'}
                                 value={nonce}
                                 onChange={(e) => setNonce(e.target.value)}
-                                placeholder="Cryptographic random secret"
+                                placeholder="32-byte hex nonce"
                                 className="w-full liquid-input pr-12 font-mono text-xs"
                                 required
                               />
@@ -407,11 +425,11 @@ export default function AuctionPage() {
                             </div>
                           </div>
 
-                          {/* Live ZK Proof Preview */}
+                          {/* Live Compact commitment calculation */}
                           <div className="p-5 rounded-2xl bg-black/60 border border-cyan-500/30 flex flex-col gap-2.5">
                             <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
                               <Shield className="w-4 h-4" />
-                              <span>Zero-Knowledge Proof Preview</span>
+                              <span>Compact Commitment Preview</span>
                             </div>
                             <div className="text-xs sm:text-sm flex justify-between items-center">
                               <span className="text-white/60">Formula:</span>
@@ -423,6 +441,7 @@ export default function AuctionPage() {
                                 {previewHash ? `${previewHash.slice(0, 22)}...${previewHash.slice(-8)}` : 'Enter parameters'}
                               </code>
                             </div>
+                            {previewError && <p role="alert" className="text-xs text-rose-300">{previewError}</p>}
                           </div>
 
                           {/* Submit Button */}
@@ -476,7 +495,7 @@ export default function AuctionPage() {
                         </div>
                         <button
                           onClick={closeAuction}
-                          disabled={selectedAuction.phase !== 'bidding' || loading}
+                          disabled={!selectedAuction.isCreator || selectedAuction.phase !== 'bidding' || loading}
                           className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
                         >
                           Close Bidding
@@ -503,7 +522,7 @@ export default function AuctionPage() {
                         </div>
                         <button
                           onClick={determineWinner}
-                          disabled={loading}
+                          disabled={selectedAuction.phase !== 'settlement' || selectedAuction.winnerDetermined || loading}
                           className="px-5 py-2.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
                         >
                           Determine Winner
@@ -517,7 +536,7 @@ export default function AuctionPage() {
                         </div>
                         <button
                           onClick={finalizeAuction}
-                          disabled={selectedAuction.phase === 'finalized' || loading}
+                          disabled={!selectedAuction.isCreator || selectedAuction.phase !== 'settlement' || !selectedAuction.winnerDetermined || loading}
                           className="px-5 py-2.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 text-xs font-bold transition cursor-pointer disabled:opacity-40 shrink-0"
                         >
                           Finalize Auction

@@ -49,10 +49,10 @@ PRIVATE WITNESS STATE (stays on your device):
     icon: <Zap className="w-6 h-6 text-purple-400" />,
     title: 'How to Participate',
     steps: [
-      { num: '1', title: 'Connect Lace Wallet', desc: 'Install the Lace wallet browser extension and connect to Midnight Testnet Preview.' },
+      { num: '1', title: 'Connect a Midnight wallet', desc: 'Install Lace or 1AM, connect, and approve access to Midnight Preprod.' },
       { num: '2', title: 'Generate a Secret Nonce', desc: 'Use the built-in nonce generator to create a random 32-byte secret. Save it securely.' },
       { num: '3', title: 'Submit Your Sealed Bid', desc: 'Enter your bid amount and nonce. The app computes persistentHash([amount, nonce]) and submits the commitment on-chain.' },
-      { num: '4', title: 'Wait for Reveal Phase', desc: 'Once the auction owner closes bidding, the reveal phase opens. Return to the Reveal page.' },
+      { num: '4', title: 'Wait for Reveal Phase', desc: 'Once a wallet closes bidding on-chain, the reveal phase opens. Return to the Reveal page.' },
       { num: '5', title: 'Reveal Your Bid', desc: 'Submit your original amount and nonce. The contract verifies the hash matches on-chain.' },
       { num: '6', title: 'Check the Winner', desc: 'After the reveal phase closes and the winner is determined, view the results in the Results tab.' },
     ],

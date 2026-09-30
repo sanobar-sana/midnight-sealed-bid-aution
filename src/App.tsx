@@ -8,6 +8,7 @@ import AuctionPage from './pages/AuctionPage';
 import RevealPage from './pages/RevealPage';
 import ResultsPage from './pages/ResultsPage';
 import HowItWorksPage from './pages/HowItWorksPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 export default function App() {
@@ -52,6 +53,7 @@ export default function App() {
                   <Route path="/reveal" element={<RevealPage />} />
                   <Route path="/results" element={<ResultsPage />} />
                   <Route path="/how-it-works" element={<HowItWorksPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                 </Routes>
               </main>
               <Footer />

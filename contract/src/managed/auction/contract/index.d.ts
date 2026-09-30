@@ -9,56 +9,149 @@ export type Witnesses<PS> = {
 }
 
 export type ImpureCircuits<PS> = {
+  createAuction(context: __compactRuntime.CircuitContext<PS>,
+                auctionId_0: Uint8Array,
+                name_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   submitBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             commitment_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  closeAuction(context: __compactRuntime.CircuitContext<PS>,
+               auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   revealBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             bid_0: bigint,
             nonce_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeReveal(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  determineWinner(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  finalizeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getAuctionResult(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
+  closeReveal(context: __compactRuntime.CircuitContext<PS>,
+              auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  determineWinner(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  finalizeAuction(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  getAuctionResult(context: __compactRuntime.CircuitContext<PS>,
+                   auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
 }
 
 export type ProvableCircuits<PS> = {
+  createAuction(context: __compactRuntime.CircuitContext<PS>,
+                auctionId_0: Uint8Array,
+                name_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   submitBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             commitment_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  closeAuction(context: __compactRuntime.CircuitContext<PS>,
+               auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   revealBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             bid_0: bigint,
             nonce_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeReveal(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  determineWinner(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  finalizeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getAuctionResult(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
+  closeReveal(context: __compactRuntime.CircuitContext<PS>,
+              auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  determineWinner(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  finalizeAuction(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  getAuctionResult(context: __compactRuntime.CircuitContext<PS>,
+                   auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
 }
 
 export type PureCircuits = {
 }
 
 export type Circuits<PS> = {
+  createAuction(context: __compactRuntime.CircuitContext<PS>,
+                auctionId_0: Uint8Array,
+                name_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   submitBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             commitment_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  closeAuction(context: __compactRuntime.CircuitContext<PS>,
+               auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
   revealBid(context: __compactRuntime.CircuitContext<PS>,
+            auctionId_0: Uint8Array,
             bid_0: bigint,
             nonce_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  closeReveal(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  determineWinner(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  finalizeAuction(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getAuctionResult(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
+  closeReveal(context: __compactRuntime.CircuitContext<PS>,
+              auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  determineWinner(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  finalizeAuction(context: __compactRuntime.CircuitContext<PS>,
+                  auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
+  getAuctionResult(context: __compactRuntime.CircuitContext<PS>,
+                   auctionId_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, AuctionResult>>;
 }
 
 export type Ledger = {
-  readonly auctionActive: boolean;
-  readonly revealActive: boolean;
-  readonly winnerDetermined: boolean;
-  readonly isFinalized: boolean;
-  readonly hasWinner: boolean;
-  readonly hasRevealedBids: boolean;
-  readonly bidCount: bigint;
+  auctionNames: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  auctionCreators: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  auctionActive: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
+  revealActive: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
+  winnerDetermined: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
+  isFinalized: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
+  hasWinner: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
+  hasRevealedBids: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
+  };
   bids: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  bidAuctionIds: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  bidders: {
     isEmpty(): boolean;
     size(): bigint;
     member(key_0: Uint8Array): boolean;
@@ -72,15 +165,35 @@ export type Ledger = {
     lookup(key_0: Uint8Array): bigint;
     [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
   };
-  readonly highestBid: bigint;
-  readonly highestBidder: Uint8Array;
-  readonly winningBid: bigint;
-  readonly winningBidder: Uint8Array;
+  highestBids: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): bigint;
+    [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
+  };
+  highestBidders: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  winningBids: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): bigint;
+    [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
+  };
+  winningBidders: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
 }
-
-export type ContractReferenceLocations = any;
-
-export declare const contractReferenceLocations : ContractReferenceLocations;
 
 export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>> {
   witnesses: W;
@@ -94,3 +207,5 @@ export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>>
 export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;
 export declare const pureCircuits: PureCircuits;
 export declare const expectedVk: Record<string, string>;
+export declare const circuitSignatures: __compactRuntime.CircuitSignatures;
+export declare const declaredInterfaces: __compactRuntime.DeclaredInterfaces;

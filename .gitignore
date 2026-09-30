@@ -5,6 +5,11 @@ dist/
 *.log
 .env
 .env.*
+!.env.example
 *.seed
 *.pem
 
+.vercel
+/.compact/
+/.compact-v8/
+/contract/.compact-v8/

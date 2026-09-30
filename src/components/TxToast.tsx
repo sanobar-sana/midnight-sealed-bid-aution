@@ -3,26 +3,28 @@ import { CheckCircle, XCircle, Loader, X } from 'lucide-react';
 interface TxToastProps {
   loading: boolean;
   txHash: string | null;
+  txStatus?: 'idle' | 'submitting' | 'submitted' | 'confirmed';
   error: string | null;
   onClose: () => void;
 }
 
-export default function TxToast({ loading, txHash, error, onClose }: TxToastProps) {
+export default function TxToast({ loading, txHash, txStatus = 'idle', error, onClose }: TxToastProps) {
   if (!loading && !txHash && !error) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full px-4 sm:px-0">
-      {loading && (
+      {(loading || txStatus === 'submitted') && (
         <div className="flex items-start gap-3.5 p-4 rounded-2xl liquid-glass border border-cyan-500/40 shadow-2xl animate-in fade-in slide-in-from-bottom-3">
           <Loader className="w-5 h-5 text-cyan-400 animate-spin shrink-0 mt-0.5" />
           <div className="flex-1">
-            <div className="font-bold text-sm text-white">Broadcasting Transaction</div>
-            <div className="text-xs text-white/60 mt-0.5 leading-relaxed">Generating ZK proof and submitting to Midnight testnet…</div>
+            <div className="font-bold text-sm text-white">{txStatus === 'submitted' ? 'Waiting for confirmation' : 'Submitting transaction'}</div>
+            <div className="text-xs text-white/60 mt-0.5 leading-relaxed">{txStatus === 'submitted' ? 'Confirmation tracking resumes automatically after reconnect or reload.' : 'Generating a ZK proof and submitting to Midnight Preprod…'}</div>
+            {txHash && <div className="text-xs font-mono text-cyan-200/80 truncate mt-1">{txHash}</div>}
           </div>
         </div>
       )}
 
-      {txHash && !loading && (
+      {txHash && !loading && txStatus !== 'submitted' && (
         <div className="flex items-start gap-3.5 p-4 rounded-2xl liquid-glass border border-emerald-500/40 shadow-2xl animate-in fade-in slide-in-from-bottom-3">
           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">

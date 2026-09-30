@@ -4,13 +4,12 @@
   "description": "Midnight Sealed-Bid Auction Compact Smart Contract",
   "main": "index.js",
   "scripts": {
-    "build": "compact compile --skip-zk src/auction.compact src/managed/auction",
-    "test": "node --test test/auction.test.js",
-    "deploy": "node scripts/deploy.js"
+    "build": "node ../scripts/build-contract.js",
+    "test": "node --test test/auction.test.js"
   },
   "keywords": [],
   "type": "module",
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "^0.19.0"
+    "@midnight-ntwrk/compact-runtime": "0.20.0"
   }
 }

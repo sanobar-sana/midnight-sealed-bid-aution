@@ -11,6 +11,7 @@ import {
   Eye,
   Trophy,
   BookOpen,
+  UserRound,
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 
@@ -20,12 +21,13 @@ const navLinks = [
   { to: '/reveal', label: 'Reveal', icon: <Eye className="w-4 h-4" /> },
   { to: '/results', label: 'Results', icon: <Trophy className="w-4 h-4" /> },
   { to: '/how-it-works', label: 'ZK Tech', icon: <BookOpen className="w-4 h-4" /> },
+  { to: '/profile', label: 'Profile', icon: <UserRound className="w-4 h-4" /> },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [walletDrop, setWalletDrop] = useState(false);
-  const { connected, address, balance, connect, disconnect, connecting, isSimulated } = useWallet();
+  const { connected, address, balance, connect, openAccountAuth, databaseAuth, accountUser, disconnect, connecting, walletName } = useWallet();
   const location = useLocation();
   const dropRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +122,7 @@ export default function Navbar() {
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400" />
                         <span className="text-xs font-bold text-emerald-400">
-                          {isSimulated ? 'Lace Wallet (Demo)' : 'Lace Wallet'}
+                          {walletName ?? 'Midnight Wallet'}
                         </span>
                       </div>
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-white/40">Midnight Testnet</span>
@@ -136,6 +138,11 @@ export default function Navbar() {
                       <div className="text-xs font-mono text-white/80 break-all bg-black/80 p-2.5 rounded-xl border border-white/10 mt-1">
                         {address}
                       </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/45">Transaction history account</div>
+                      <p className="text-xs font-medium text-emerald-300">{accountUser?.email || 'Signed in'} · transaction history sync is enabled</p>
                     </div>
 
                     <div className="flex gap-2 pt-1">
@@ -159,15 +166,18 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={connect}
-                disabled={connecting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-white/90 text-black text-xs font-bold transition-all shadow-md active:scale-[0.98] cursor-pointer disabled:opacity-50"
-              >
-                <Wallet className="w-3.5 h-3.5 text-black" />
-                <span>{connecting ? 'Connecting...' : 'Connect Wallet'}</span>
-              </button>
+              databaseAuth === 'checking' ? (
+                <span className="px-3 py-1.5 text-xs text-white/50">Checking session…</span>
+              ) : databaseAuth === 'authenticated' ? (
+                <button type="button" onClick={() => void connect()} disabled={connecting} className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-white/90 text-black text-xs font-bold transition disabled:opacity-50">
+                  <Wallet className="w-3.5 h-3.5" /><span>{connecting ? 'Connecting…' : 'Connect Wallet'}</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={() => openAccountAuth('signin')} className="px-3 py-1.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold">Sign in</button>
+                  <button type="button" onClick={() => openAccountAuth('register')} className="px-3.5 py-1.5 rounded-full bg-white hover:bg-white/90 text-black text-xs font-bold">Register</button>
+                </div>
+              )
             )}
 
             {/* Mobile Menu Toggle Button */}
@@ -206,7 +216,7 @@ export default function Navbar() {
           })}
 
           <div className="mt-auto pb-10 flex flex-col gap-3 text-center border-t border-white/10 pt-6">
-            <div className="text-xs text-white/40">Midnight Testnet Preview · Compact ZK v0.5.2</div>
+            <div className="text-xs text-white/40">Midnight Preprod · Compact ZK</div>
           </div>
         </div>
       )}

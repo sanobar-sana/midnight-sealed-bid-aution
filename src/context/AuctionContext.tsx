@@ -1,395 +1,373 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { findDeployedContract, deployContract } from '@midnight-ntwrk/midnight-js/contracts';
+import { Contract, ledger } from '../../contract/src/managed/auction/contract/index.js';
+import { Contract as ContractV8, ledger as ledgerV8 } from '../contract/auction-v8';
+import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import { toHex } from '@midnight-ntwrk/compact-runtime';
 import { useWallet } from './WalletContext';
+import { createAuctionProviders } from '../chain/providers';
+import { AUCTION_CONTRACT_ADDRESS, AUCTION_CONTRACT_ERA } from '../chain/config';
 
-export type AuctionPhase = 'bidding' | 'reveal' | 'finalized';
-
-export interface BidEntry {
-  bidder: string;
-  commitment: string;
-  revealed?: boolean;
-  revealedAmount?: number;
-}
-
+export type AuctionPhase = 'bidding' | 'reveal' | 'settlement' | 'finalized';
+export interface BidEntry { bidder: string; commitment: string; revealed?: boolean; revealedAmount?: number }
 export interface AuctionItem {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  imageEmoji: string;
-  contractAddress: string;
-  phase: AuctionPhase;
-  bidCount: number;
-  bids: BidEntry[];
-  winner: string | null;
-  winningBid: number | null;
-  hasWinner: boolean;
-  userHasBid: boolean;
-  userHasRevealed: boolean;
-  userCommitment: string | null;
-  userBidAmount?: number;
-  userNonce?: string;
+  id: string; title: string; category: string; description: string; imageEmoji: string;
+  contractAddress: string; phase: AuctionPhase; bidCount: number; bids: BidEntry[];
+  winner: string | null; winningBid: number | null; hasWinner: boolean; winnerDetermined: boolean;
+  userHasBid: boolean; userHasRevealed: boolean; userCommitment: string | null;
+  userBidAmount?: number; userNonce?: string; creator: string; isCreator: boolean;
 }
-
-const DEFAULT_AUCTIONS: AuctionItem[] = [
-  {
-    id: 'auction-1',
-    title: 'Genesis Midnight Privacy Pass #001',
-    category: 'Exclusive NFT',
-    description: 'First generation commemorative zero-knowledge membership pass providing governance weight on Midnight testnet.',
-    imageEmoji: '🛡️',
-    contractAddress: '542035fca8e74138ffe47e04d04b481494d0d1c88017d6bcb40af2b6fa27140a',
-    phase: 'bidding',
-    bidCount: 4,
-    bids: [
-      { bidder: '0xabcd...1234', commitment: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', revealed: false },
-      { bidder: '0xefgh...5678', commitment: 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb', revealed: false },
-      { bidder: '0x9921...aa10', commitment: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a', revealed: false },
-      { bidder: '0x4481...e992', commitment: '185f8db32271fe26f561a6fc938b2e264306ec304eda518007d1764826381969', revealed: false },
-    ],
-    winner: null,
-    winningBid: null,
-    hasWinner: false,
-    userHasBid: false,
-    userHasRevealed: false,
-    userCommitment: null,
-  },
-  {
-    id: 'auction-2',
-    title: 'Compact ZK Domain: privacy.midnight',
-    category: 'Midnight Domain',
-    description: 'Ultra-rare 1-letter Midnight Name Service (MNS) domain name tied to zero-knowledge identity resolution.',
-    imageEmoji: '⚡',
-    contractAddress: '78291a27b4091c66fe853e4b09d2a4a2b1090c5c88017d6bcb40af2b6fa9900a',
-    phase: 'bidding',
-    bidCount: 5,
-    bids: [
-      { bidder: '0x1029...7710', commitment: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', revealed: false },
-      { bidder: '0x8821...bb90', commitment: '603786828170e5b70343204212a44b1fa85141076f8274382742914104278479', revealed: false },
-      { bidder: '0x3300...112a', commitment: '7394d1a0972b918f88432a1012f4581290384729104820194829104820194820', revealed: false },
-      { bidder: '0x7712...cc90', commitment: '1102938475610293847561029384756102938475610293847561029384756102', revealed: false },
-      { bidder: '0x9900...ffee', commitment: '556677889900aabbccddeeff00112233445566778899aabbccddeeff00112233', revealed: false },
-    ],
-    winner: null,
-    winningBid: null,
-    hasWinner: false,
-    userHasBid: false,
-    userHasRevealed: false,
-    userCommitment: null,
-  },
-  {
-    id: 'auction-3',
-    title: 'Sovereign Zero-Knowledge GPU Cluster Node',
-    category: 'Compute Credit',
-    description: 'Lifetime access pass for high-throughput zero-knowledge proof generation workers on the Midnight network.',
-    imageEmoji: '🔮',
-    contractAddress: '9910c5c88017d6bcb40af2b6fa9900a78291a27b4091c66fe853e4b09d2a4a2b',
-    phase: 'reveal',
-    bidCount: 4,
-    bids: [
-      { bidder: '0x3344...8899', commitment: 'aa11bb22cc33dd44ee55ff667788990011223344556677889900112233445566', revealed: true, revealedAmount: 1850 },
-      { bidder: '0x5566...0011', commitment: 'bb22cc33dd44ee55ff6677889900112233445566778899001122334455667788', revealed: true, revealedAmount: 2400 },
-      { bidder: '0x7788...2233', commitment: 'cc33dd44ee55ff66778899001122334455667788990011223344556677889900', revealed: true, revealedAmount: 1200 },
-      { bidder: '0x9900...4455', commitment: 'dd44ee55ff667788990011223344556677889900112233445566778899001122', revealed: false },
-    ],
-    winner: null,
-    winningBid: null,
-    hasWinner: false,
-    userHasBid: false,
-    userHasRevealed: false,
-    userCommitment: null,
-  },
-  {
-    id: 'auction-4',
-    title: 'Midnight Pioneer Founder Key #042',
-    category: 'Pioneer Key',
-    description: 'Genesis Founder Key granting early access to protocol revenue sharing and Compact circuit governance votes.',
-    imageEmoji: '👑',
-    contractAddress: '11223344556677889900aabbccddeeff00112233445566778899aabbccddeeff',
-    phase: 'finalized',
-    bidCount: 5,
-    bids: [
-      { bidder: '0x7721...e91a', commitment: 'fe99a0b12c4d8e9a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a', revealed: true, revealedAmount: 2850 },
-      { bidder: '0x8832...f02b', commitment: 'e889a0b12c4d8e9a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8b', revealed: true, revealedAmount: 2100 },
-      { bidder: '0x9943...a13c', commitment: 'd779a0b12c4d8e9a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8c', revealed: true, revealedAmount: 1950 },
-      { bidder: '0x0054...b24d', commitment: 'c669a0b12c4d8e9a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8d', revealed: true, revealedAmount: 1400 },
-      { bidder: '0x1165...c35e', commitment: 'b559a0b12c4d8e9a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8e', revealed: true, revealedAmount: 900 },
-    ],
-    winner: '0x7721...e91a',
-    winningBid: 2850,
-    hasWinner: true,
-    userHasBid: false,
-    userHasRevealed: false,
-    userCommitment: null,
-  },
-];
-
+type TxStatus = 'idle' | 'submitting' | 'submitted' | 'confirmed';
 interface AuctionContextValue {
-  auctions: AuctionItem[];
-  selectedAuctionId: string;
-  selectedAuction: AuctionItem;
-  selectAuction: (id: string) => void;
+  auctions: AuctionItem[]; selectedAuctionId: string; selectedAuction: AuctionItem;
+  selectAuction: (id: string) => void; createAuction: (name: string) => Promise<void>;
   submitBid: (amount: number, nonce: string) => Promise<void>;
-  closeAuction: () => Promise<void>;
-  revealBid: (amount: number, nonce: string) => Promise<void>;
-  closeReveal: () => Promise<void>;
-  determineWinner: () => Promise<void>;
-  finalizeAuction: () => Promise<void>;
+  closeAuction: () => Promise<void>; revealBid: (amount: number, nonce: string) => Promise<void>;
+  closeReveal: () => Promise<void>; determineWinner: () => Promise<void>; finalizeAuction: () => Promise<void>;
   computeCommitmentHash: (amount: number, nonce: string) => Promise<string>;
-  loading: boolean;
-  txHash: string | null;
-  error: string | null;
-  clearError: () => void;
+  loading: boolean; txHash: string | null; txStatus: TxStatus; error: string | null; clearError: () => void;
 }
-
 const AuctionContext = createContext<AuctionContextValue | null>(null);
+const EMPTY_AUCTION: AuctionItem = {
+  id: '', title: 'No shared auction', category: 'Midnight Compact contract',
+  description: 'Connect a Midnight wallet to load the shared auction contract state.',
+  imageEmoji: '🔐', contractAddress: '', phase: 'bidding', bidCount: 0, bids: [], winner: null,
+  winningBid: null, hasWinner: false, winnerDetermined: false, userHasBid: false, userHasRevealed: false, userCommitment: null, creator: '', isCreator: false,
+};
+const contractInstance = new Contract({});
+const compiledContract = CompiledContract.make('SealedBidAuction', Contract as unknown as typeof Contract<undefined>)
+  .pipe(CompiledContract.withVacantWitnesses, CompiledContract.withCompiledFileAssets('/contract/auction'));
+const retainedContract = new ContractV8({});
+const contractAddress = AUCTION_CONTRACT_ADDRESS.trim().replace(/^0x/, '').toLowerCase();
+const nonceToBytes = (nonce: string) => {
+  const cleaned = nonce.startsWith('0x') ? nonce.slice(2) : nonce;
+  if (/^[0-9a-fA-F]{64}$/.test(cleaned)) return Uint8Array.from(cleaned.match(/.{2}/g)!, (byte) => Number.parseInt(byte, 16));
+  const encoded = new TextEncoder().encode(nonce);
+  if (encoded.length > 32) throw new Error('Nonce must be at most 32 UTF-8 bytes, or exactly 32 bytes of hex.');
+  const result = new Uint8Array(32); result.set(encoded); return result;
+};
+const idToBytes = (id: string) => Uint8Array.from(id.match(/.{2}/g) ?? [], (byte) => Number.parseInt(byte, 16));
+const toFixedName = (name: string) => {
+  const encoded = new TextEncoder().encode(name.trim());
+  if (!encoded.length || encoded.length > 64) throw new Error('Auction name must be between 1 and 64 UTF-8 bytes.');
+  const padded = new Uint8Array(64); padded.set(encoded); return padded;
+};
+const decodeName = (value: Uint8Array) => new TextDecoder().decode(value).replace(/\0+$/, '') || 'Untitled auction';
+type PendingTransaction = { id: string; accountId: string; submittedAt: number; kind: string; auctionId: string | null };
 
-let _cachedContractModule: any = null;
-let _cachedCompactRuntime: any = null;
-async function getContractAndRuntime() {
-  if (!_cachedContractModule) {
-    _cachedContractModule = await import('../../contract/src/managed/auction/contract/index.js');
+async function saveTransactionHistory(record: PendingTransaction) {
+  const key = 'midnight_transaction_history_queue';
+  let queue: PendingTransaction[] = [];
+  try { queue = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { /* reset malformed local queue */ }
+  if (!queue.some((entry) => entry.id === record.id)) queue.push(record);
+  localStorage.setItem(key, JSON.stringify(queue));
+  const remaining: PendingTransaction[] = [];
+  for (const entry of queue) {
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txId: entry.id, kind: entry.kind, auctionId: entry.auctionId }),
+      });
+      if (!response.ok) remaining.push(entry);
+    } catch { remaining.push(entry); }
   }
-  if (!_cachedCompactRuntime) {
-    _cachedCompactRuntime = await import('@midnight-ntwrk/compact-runtime');
-  }
-  return { contractModule: _cachedContractModule, compactRuntime: _cachedCompactRuntime };
+  localStorage.setItem(key, JSON.stringify(remaining));
 }
 
 export async function computeCompactCommitment(amount: number, nonce: string): Promise<Uint8Array> {
-  const { contractModule } = await getContractAndRuntime();
-  const Contract = contractModule.Contract;
-  const contractHelper = new Contract({});
-  const nonceBytes = new Uint8Array(32);
-  const encoded = new TextEncoder().encode(nonce);
-  nonceBytes.set(encoded.slice(0, 32));
-  return (contractHelper as any)._persistentHash_0([BigInt(amount), nonceBytes]);
+  if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Bid must be a non-negative integer.');
+  return (contractInstance as any)._persistentHash_0([BigInt(amount), nonceToBytes(nonce)]);
+}
+export async function computeCommitmentHashString(amount: number, nonce: string): Promise<string> {
+  return toHex(await computeCompactCommitment(amount, nonce));
 }
 
-export async function computeCommitmentHashString(amount: number, nonce: string): Promise<string> {
-  const bytes = await computeCompactCommitment(amount, nonce);
-  const { compactRuntime } = await getContractAndRuntime();
-  return compactRuntime.toHex(bytes);
-}
+declare global { interface Window { midnightAuction?: { deploy: () => Promise<string> } } }
 
 export function AuctionProvider({ children }: { children: ReactNode }) {
-  const { connected, address } = useWallet();
-  const [auctions, setAuctions] = useState<AuctionItem[]>(DEFAULT_AUCTIONS);
-  const [selectedAuctionId, setSelectedAuctionId] = useState<string>('auction-1');
+  const { connected, address, api, refreshBalance } = useWallet();
+  const [auctions, setAuctions] = useState<AuctionItem[]>([]);
+  const [selectedAuctionId, setSelectedAuctionId] = useState('');
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [txStatus, setTxStatus] = useState<TxStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const session = useRef<Awaited<ReturnType<typeof createAuctionProviders>> | null>(null);
+  const contract = useRef<any>(null);
+  const resumingTx = useRef<string | null>(null);
+  const txMetadata = useRef<{ kind: string; auctionId: string | null }>({ kind: 'createAuction', auctionId: null });
+  const clearError = useCallback(() => setError(null), []);
+  const selectedAuction = useMemo(() => auctions.find((item) => item.id === selectedAuctionId) ?? auctions[0] ?? EMPTY_AUCTION, [auctions, selectedAuctionId]);
 
-  const selectedAuction = auctions.find((a) => a.id === selectedAuctionId) || auctions[0];
+  const onTransactionSubmitted = useCallback((id: string) => {
+    setTxHash(id);
+    setTxStatus('submitted');
+    const record: PendingTransaction = { id, accountId: address ?? '', submittedAt: Date.now(), ...txMetadata.current };
+    localStorage.setItem('midnight_pending_transaction', JSON.stringify(record));
+  }, [address]);
 
-  const clearError = () => setError(null);
+  const ensureProvider = useCallback(async (forDeployment = false) => {
+    if (!connected || !api || !address) throw new Error('Connect a Midnight wallet first.');
+    const configuredEra = forDeployment ? undefined : AUCTION_CONTRACT_ERA ?? undefined;
+    if (!forDeployment && contractAddress && !configuredEra) {
+      throw new Error('Set VITE_AUCTION_CONTRACT_ERA to ledger8 or ledger9 alongside the shared contract address. Contract era is fixed when it is deployed.');
+    }
+    if (!session.current || (forDeployment && session.current.ledgerEra !== session.current.chainEra) || (!forDeployment && session.current.ledgerEra !== configuredEra)) {
+      session.current = await createAuctionProviders(api, address, onTransactionSubmitted, configuredEra);
+    }
+    return session.current;
+  }, [connected, api, address, onTransactionSubmitted]);
 
-  const selectAuction = useCallback((id: string) => {
-    setSelectedAuctionId(id);
-    clearError();
+  useEffect(() => {
+    contract.current = null;
+    session.current = null;
+  }, [api, address]);
+
+  const hydrateAuctions = useCallback(async (state: any) => {
+    const data = (session.current?.ledgerEra === 'ledger8' ? ledgerV8 : ledger)(state.data);
+    const privateState = await session.current!.providers.privateStateProvider;
+    privateState.setContractAddress(contractAddress);
+    const savedBids = (await privateState.get('sealedAuctionBids') as Record<string, { amount: number; nonce: string; commitment: string }> | null) ?? {};
+    const entries: AuctionItem[] = Array.from(data.auctionCreators, ([idBytes, creatorBytes]) => {
+      const id = toHex(idBytes).toLowerCase();
+      const bidRows: BidEntry[] = Array.from(data.bids).flatMap(([bidId, commitment]) => {
+        if (toHex(data.bidAuctionIds.lookup(bidId)).toLowerCase() !== id) return [];
+        const revealed = data.revealedBids.member(bidId);
+        return [{
+          bidder: toHex(data.bidders.lookup(bidId)), commitment: toHex(commitment), revealed,
+          revealedAmount: revealed ? Number(data.revealedBids.lookup(bidId)) : undefined,
+        }];
+      });
+      const saved = savedBids[id];
+      const ownBid = saved && bidRows.find((bid) => bid.commitment === saved.commitment);
+      const active = data.auctionActive.lookup(idBytes);
+      const revealOpen = data.revealActive.lookup(idBytes);
+      const finalized = data.isFinalized.lookup(idBytes);
+      const winnerExists = data.hasWinner.lookup(idBytes);
+      return {
+        ...EMPTY_AUCTION,
+        id,
+        title: decodeName(data.auctionNames.lookup(idBytes)),
+        description: 'Auction state read from the shared Midnight Preprod contract.',
+        contractAddress,
+        creator: toHex(creatorBytes),
+        isCreator: toHex(creatorBytes).toLowerCase() === session.current!.shieldedCoinPublicKey,
+        phase: finalized ? 'finalized' : active ? 'bidding' : revealOpen ? 'reveal' : 'settlement',
+        bidCount: bidRows.length,
+        bids: bidRows,
+        hasWinner: winnerExists,
+        winnerDetermined: data.winnerDetermined.lookup(idBytes),
+        winner: winnerExists ? toHex(data.winningBidders.lookup(idBytes)) : null,
+        winningBid: winnerExists ? Number(data.winningBids.lookup(idBytes)) : null,
+        userHasBid: !!ownBid,
+        userHasRevealed: !!ownBid?.revealed,
+        userCommitment: ownBid?.commitment ?? null,
+        userBidAmount: saved?.amount,
+        userNonce: saved?.nonce,
+      };
+    });
+    setAuctions(entries);
+    if (!entries.some((item) => item.id === selectedAuctionId)) setSelectedAuctionId(entries[0]?.id ?? '');
+  }, [selectedAuctionId]);
+
+  const refresh = useCallback(async () => {
+    if (!contractAddress) { setAuctions([]); return; }
+    const bundle = await ensureProvider();
+    if (!contract.current) {
+      contract.current = bundle.ledgerEra === 'ledger8'
+        ? await findDeployedContract(bundle.providers as any, { compiledContract: retainedContract, contractAddress } as any)
+        : await findDeployedContract(bundle.providers as any, { compiledContract, contractAddress });
+    }
+    const state = await bundle.publicDataProvider.queryContractState(contractAddress);
+    if (!state) throw new Error(`Shared auction contract ${contractAddress} was not found by the connected wallet's indexer.`);
+    await hydrateAuctions(state);
+  }, [contractAddress, ensureProvider, hydrateAuctions]);
+
+  useEffect(() => {
+    if (!contractAddress || !connected) { setAuctions([]); return; }
+    let stopped = false;
+    let subscription: { unsubscribe: () => void } | undefined;
+    let retryTimer = 0;
+    let refreshTimer = 0;
+    const connectIndexer = async () => {
+      try {
+        const bundle = await ensureProvider();
+        await refresh();
+        if (stopped) return;
+        subscription = bundle.publicDataProvider.contractStateObservable(contractAddress, { type: 'latest' }).subscribe({
+          next: (state) => { void hydrateAuctions(state).catch((cause) => setError(cause instanceof Error ? cause.message : String(cause))); },
+          error: (cause) => {
+            if (stopped) return;
+            setError(cause instanceof Error ? `Indexer stream interrupted; reconnecting: ${cause.message}` : 'Indexer stream interrupted; reconnecting.');
+            retryTimer = window.setTimeout(() => { void connectIndexer(); }, 5_000);
+          },
+          complete: () => {
+            if (!stopped) retryTimer = window.setTimeout(() => { void connectIndexer(); }, 5_000);
+          },
+        });
+        refreshTimer = window.setInterval(() => { void refresh().catch((cause) => setError(cause instanceof Error ? cause.message : String(cause))); }, 30_000);
+      } catch (cause) {
+        if (!stopped) {
+          setError(cause instanceof Error ? cause.message : String(cause));
+          retryTimer = window.setTimeout(() => { void connectIndexer(); }, 5_000);
+        }
+      }
+    };
+    void connectIndexer();
+    return () => {
+      stopped = true;
+      subscription?.unsubscribe();
+      window.clearTimeout(retryTimer);
+      window.clearInterval(refreshTimer);
+    };
+  }, [contractAddress, connected, ensureProvider, hydrateAuctions, refresh]);
+
+  useEffect(() => {
+    if (!connected || !address) return;
+    let active = true;
+    let retryTimer = 0;
+    const resume = () => {
+      const pending = localStorage.getItem('midnight_pending_transaction');
+      if (!pending) return;
+      try {
+        const record = JSON.parse(pending) as PendingTransaction;
+        if (!record.id || record.accountId !== address || resumingTx.current === record.id) return;
+      resumingTx.current = record.id;
+      setTxHash(record.id);
+      setTxStatus('submitted');
+      void ensureProvider().then(({ publicDataProvider }) => publicDataProvider.watchForTxData(record.id)).then(() => {
+        if (!active) return;
+        localStorage.removeItem('midnight_pending_transaction');
+        setTxStatus('confirmed');
+        void saveTransactionHistory(record);
+        void refresh();
+      }).catch(() => {
+        if (active) {
+          setError('Still waiting for the submitted transaction to be indexed. Tracking will retry automatically.');
+          retryTimer = window.setTimeout(() => { retryTimer = 0; resumingTx.current = null; resume(); }, 5_000);
+        }
+      }).finally(() => { if (!retryTimer) resumingTx.current = null; });
+      } catch { localStorage.removeItem('midnight_pending_transaction'); }
+    };
+    const onResumeRequest = () => resume();
+    window.addEventListener('midnight-resume-transaction', onResumeRequest);
+    resume();
+    return () => { active = false; window.clearTimeout(retryTimer); window.removeEventListener('midnight-resume-transaction', onResumeRequest); };
+  }, [connected, address, ensureProvider, refresh]);
+
+  useEffect(() => {
+    const flush = () => {
+      let queue: PendingTransaction[] = [];
+      try { queue = JSON.parse(localStorage.getItem('midnight_transaction_history_queue') ?? '[]'); } catch { return; }
+      for (const record of queue) void saveTransactionHistory(record);
+    };
+    window.addEventListener('midnight-authenticated', flush);
+    window.addEventListener('online', flush);
+    flush();
+    return () => {
+      window.removeEventListener('midnight-authenticated', flush);
+      window.removeEventListener('online', flush);
+    };
   }, []);
 
-  const submitBid = useCallback(
-    async (amount: number, nonce: string) => {
-      if (!connected) {
-        setError('Wallet disconnected. Please connect your Lace Wallet to Midnight Preprod first.');
-        return;
-      }
-      if (selectedAuction.userHasBid) {
-        setError('You have already submitted a bid for this auction.');
-        return;
-      }
-      if (selectedAuction.phase !== 'bidding') {
-        setError('This auction is not in the bidding phase.');
-        return;
-      }
-
-      setLoading(true);
-      setTxHash(null);
-      setError(null);
-
-      try {
-        const commitmentBytes = await computeCompactCommitment(amount, nonce);
-        const { compactRuntime } = await getContractAndRuntime();
-        const commitmentHex = compactRuntime.toHex(commitmentBytes);
-
-        const realTxHash = commitmentHex.slice(0, 64);
-        setTxHash(realTxHash);
-
-        setAuctions((prev) =>
-          prev.map((a) => {
-            if (a.id !== selectedAuctionId) return a;
-            return {
-              ...a,
-              bidCount: a.bidCount + 1,
-              userHasBid: true,
-              userCommitment: commitmentHex,
-              userBidAmount: amount,
-              userNonce: nonce,
-              bids: [
-                ...a.bids,
-                {
-                  bidder: address ? `You (${address.slice(0, 6)}...${address.slice(-4)})` : 'You',
-                  commitment: `${commitmentHex.slice(0, 10)}...${commitmentHex.slice(-6)}`,
-                  revealed: false,
-                },
-              ],
-            };
-          })
-        );
-      } catch (err: any) {
-        console.error('Circuit execution error:', err);
-        setError(err?.message || 'Failed to execute submitBid circuit.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [connected, address, selectedAuction, selectedAuctionId]
-  );
-
-  const closeAuction = useCallback(async () => {
-    setLoading(true);
-    setTxHash(null);
-    setError(null);
+  const runTx = useCallback(async (name: string, args: unknown[], scoped = true) => {
+    setLoading(true); setTxHash(null); setTxStatus('submitting'); setError(null);
+    txMetadata.current = { kind: name, auctionId: scoped ? selectedAuction.id : null };
     try {
-      await new Promise((r) => setTimeout(r, 400));
-      const hash = `0xclose_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
-      setTxHash(hash);
-      setAuctions((prev) =>
-        prev.map((a) => (a.id === selectedAuctionId ? { ...a, phase: 'reveal' as AuctionPhase } : a))
-      );
-    } catch (err: any) {
-      setError(err?.message || 'Failed to close bidding phase.');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAuctionId]);
+      if (!contractAddress) throw new Error('No shared auction contract address is configured in src/chain/config.ts.');
+      await ensureProvider();
+      if (!contract.current) await refresh();
+      const callArgs = scoped ? [idToBytes(selectedAuction.id), ...args] : args;
+      const data = await contract.current.callTx[name](...callArgs);
+      setTxHash(data.public.txId);
+      setTxStatus('submitted');
+      const pendingRecord = JSON.parse(localStorage.getItem('midnight_pending_transaction') ?? 'null') as PendingTransaction | null;
+      const record: PendingTransaction = pendingRecord && pendingRecord.id === data.public.txId ? pendingRecord : {
+        id: data.public.txId, accountId: address ?? '', submittedAt: Date.now(), ...txMetadata.current,
+      };
+      localStorage.setItem('midnight_pending_transaction', JSON.stringify(record));
+      await session.current!.publicDataProvider.watchForTxData(data.public.txId);
+      localStorage.removeItem('midnight_pending_transaction');
+      setTxStatus('confirmed');
+      await saveTransactionHistory(record);
+      await refresh();
+      await refreshBalance();
+      return true;
+    } catch (cause) {
+      const pending = localStorage.getItem('midnight_pending_transaction');
+      if (pending) {
+        setTxStatus('submitted');
+        window.dispatchEvent(new Event('midnight-resume-transaction'));
+      } else setTxStatus('idle');
+      setError(cause instanceof Error ? cause.message : String(cause));
+      return false;
+    } finally { setLoading(false); }
+  }, [address, contractAddress, ensureProvider, refresh, refreshBalance, selectedAuction.id]);
 
-  const revealBid = useCallback(
-    async (amount: number, _nonce: string) => {
-      if (!selectedAuction.userHasBid) {
-        setError('No commitment found. You must place a sealed bid first.');
-        return;
-      }
-      if (selectedAuction.userHasRevealed) {
-        setError('You have already revealed your bid.');
-        return;
-      }
-      if (selectedAuction.phase !== 'reveal') {
-        setError('Auction is not in the reveal phase.');
-        return;
-      }
-      setLoading(true);
-      setTxHash(null);
-      setError(null);
-      try {
-        await new Promise((r) => setTimeout(r, 500));
-        const hash = `0xreveal_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
-        setTxHash(hash);
-        setAuctions((prev) =>
-          prev.map((a) =>
-            a.id === selectedAuctionId
-              ? {
-                  ...a,
-                  userHasRevealed: true,
-                  bids: a.bids.map((b) =>
-                    b.bidder.startsWith('You') ? { ...b, revealed: true, revealedAmount: amount } : b
-                  ),
-                }
-              : a
-          )
-        );
-      } catch (err: any) {
-        setError(err?.message || 'Failed to execute reveal circuit.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [selectedAuction, selectedAuctionId]
-  );
+  const createAuction = useCallback(async (name: string) => {
+    const id = crypto.getRandomValues(new Uint8Array(32));
+    const idHex = toHex(id).toLowerCase();
+    const ok = await runTx('createAuction', [id, toFixedName(name)], false);
+    if (ok) setSelectedAuctionId(idHex);
+  }, [runTx]);
 
-  const closeReveal = useCallback(async () => {}, []);
-
-  const determineWinner = useCallback(async () => {
-    setLoading(true);
-    setTxHash(null);
-    setError(null);
+  const submitBid = useCallback(async (amount: number, nonce: string) => {
+    if (!Number.isSafeInteger(amount) || amount <= 0) { setError('Bid must be a positive integer number of DUST.'); return; }
     try {
-      await new Promise((r) => setTimeout(r, 500));
-      const revealed = selectedAuction.bids.filter((b) => b.revealed && b.revealedAmount !== undefined);
-      if (revealed.length === 0) {
-        setAuctions((prev) =>
-          prev.map((a) => (a.id === selectedAuctionId ? { ...a, hasWinner: false } : a))
-        );
-        setError('No valid revealed bids found to determine a winner.');
-        return;
-      }
-      const top = revealed.reduce((a, b) => (b.revealedAmount! > a.revealedAmount! ? b : a));
-      const hash = `0xwinner_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
-      setTxHash(hash);
-      setAuctions((prev) =>
-        prev.map((a) =>
-          a.id === selectedAuctionId
-            ? {
-                ...a,
-                winner: top.bidder,
-                winningBid: top.revealedAmount!,
-                hasWinner: true,
-              }
-            : a
-        )
-      );
-    } catch (err: any) {
-      setError(err?.message || 'Failed to determine winner.');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAuction, selectedAuctionId]);
+      const commitment = await computeCompactCommitment(amount, nonce);
+      const commitmentHex = toHex(commitment);
+      const bundle = await ensureProvider();
+      bundle.providers.privateStateProvider.setContractAddress(contractAddress);
+      const saved = (await bundle.providers.privateStateProvider.get('sealedAuctionBids') as Record<string, { amount: number; nonce: string; commitment: string }> | null) ?? {};
+      await bundle.providers.privateStateProvider.set('sealedAuctionBids', { ...saved, [selectedAuction.id]: { amount, nonce, commitment: commitmentHex } });
+      await runTx('submitBid', [commitment]);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); }
+  }, [runTx, ensureProvider, selectedAuction.id]);
 
-  const finalizeAuction = useCallback(async () => {
-    setLoading(true);
-    setTxHash(null);
-    setError(null);
+  const revealBid = useCallback(async (amount: number, nonce: string) => { await runTx('revealBid', [BigInt(amount), nonceToBytes(nonce)]); }, [runTx]);
+  const action = useCallback((name: string) => async () => { await runTx(name, []); }, [runTx]);
+  const deploy = useCallback(async () => {
+    if (!connected || !api || !address) throw new Error('Connect a Midnight wallet before deploying.');
+    setLoading(true); setError(null); setTxHash(null); setTxStatus('submitting');
     try {
-      await new Promise((r) => setTimeout(r, 400));
-      const hash = `0xfinalize_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
-      setTxHash(hash);
-      setAuctions((prev) =>
-        prev.map((a) => (a.id === selectedAuctionId ? { ...a, phase: 'finalized' as AuctionPhase } : a))
-      );
-    } catch (err: any) {
-      setError(err?.message || 'Failed to finalize auction.');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAuctionId]);
+      const bundle = await ensureProvider(true);
+      const deployed = bundle.ledgerEra === 'ledger8'
+        ? await deployContract(bundle.providers as any, { compiledContract: retainedContract } as any) as any
+        : await deployContract(bundle.providers as any, { compiledContract }) as any;
+      const deployedAddress: string = deployed.contractAddress;
+      const deployTxId: string | undefined = deployed.deployTxData?.public?.txId;
+      localStorage.removeItem('midnight_pending_transaction');
+      if (deployTxId) setTxHash(deployTxId);
+      setTxStatus('confirmed');
+      contract.current = deployed;
+      localStorage.setItem('midnight_shared_auction_deployment', JSON.stringify({ address: deployedAddress, ledgerEra: bundle.ledgerEra }));
+      setAuctions([]);
+      console.info(`Shared auction deployed in ${bundle.ledgerEra}. Add VITE_AUCTION_CONTRACT_ADDRESS=${deployedAddress} and VITE_AUCTION_CONTRACT_ERA=${bundle.ledgerEra} to the Vercel project and redeploy the frontend.`);
+      return deployedAddress;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+      throw cause;
+    } finally { setLoading(false); }
+  }, [connected, api, address, ensureProvider]);
 
-  return (
-    <AuctionContext.Provider
-      value={{
-        auctions,
-        selectedAuctionId,
-        selectedAuction,
-        selectAuction,
-        submitBid,
-        closeAuction,
-        revealBid,
-        closeReveal,
-        determineWinner,
-        finalizeAuction,
-        computeCommitmentHash: computeCommitmentHashString,
-        loading,
-        txHash,
-        error,
-        clearError,
-      }}
-    >
-      {children}
-    </AuctionContext.Provider>
-  );
+  useEffect(() => {
+    window.midnightAuction = { deploy: async () => {
+      try { const result = await deploy(); console.info('Shared auction contract deployed:', result); return result; }
+      catch (cause) { const message = cause instanceof Error ? cause.message : String(cause); setError(message); throw cause; }
+    } };
+    return () => { delete window.midnightAuction; };
+  }, [deploy]);
+
+  const selectAuction = useCallback((id: string) => { setSelectedAuctionId(id); setError(null); }, []);
+  return <AuctionContext.Provider value={{
+    auctions, selectedAuctionId, selectedAuction, selectAuction, createAuction,
+    submitBid, closeAuction: action('closeAuction'), revealBid, closeReveal: action('closeReveal'),
+    determineWinner: action('determineWinner'), finalizeAuction: action('finalizeAuction'),
+    computeCommitmentHash: computeCommitmentHashString, loading, txHash, txStatus, error, clearError,
+  }}>{children}</AuctionContext.Provider>;
 }
-
 export function useAuction() {
-  const ctx = useContext(AuctionContext);
-  if (!ctx) throw new Error('useAuction must be used within AuctionProvider');
-  return ctx;
+  const context = useContext(AuctionContext);
+  if (!context) throw new Error('useAuction must be used within AuctionProvider');
+  return context;
 }

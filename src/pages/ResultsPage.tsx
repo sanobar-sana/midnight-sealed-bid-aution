@@ -61,7 +61,7 @@ export default function ResultsPage() {
                     <div className="text-left">
                       <div className="text-xs font-bold leading-tight">{a.title}</div>
                       <div className="text-[10px] opacity-70 font-normal mt-0.5">
-                        {a.phase === 'finalized' ? '🏆 Finalized' : a.phase === 'reveal' ? '🔵 Reveal' : '🟢 Bidding'}
+                        {a.phase === 'finalized' ? '🏆 Finalized' : a.phase === 'reveal' ? '🔵 Reveal' : a.phase === 'settlement' ? '🟣 Settlement' : '🟢 Bidding'}
                       </div>
                     </div>
                   </button>

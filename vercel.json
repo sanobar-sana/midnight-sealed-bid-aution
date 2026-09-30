@@ -1,8 +1,11 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/auction", "destination": "/index.html" },
+    { "source": "/reveal", "destination": "/index.html" },
+    { "source": "/results", "destination": "/index.html" },
+    { "source": "/how-it-works", "destination": "/index.html" }
   ]
 }
